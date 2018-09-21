@@ -535,7 +535,7 @@ size_t ptedit_get_mts();
 /**
  * Programs the value of all memory types (x86 PATs / ARM MAIRs). This is equivalent to writing to the MSR 0x277 (x86) / MAIR_EL1 (ARM) on all CPUs.
  *
- * @param[in] pats The memory types in the same format as in the IA32_PAT MSR / MAIR_EL1
+ * @param[in] mts The memory types in the same format as in the IA32_PAT MSR / MAIR_EL1
  *
  */
 void ptedit_set_mts(size_t mts);
@@ -543,7 +543,7 @@ void ptedit_set_mts(size_t mts);
 /**
  * Reads the value of a specific memory type attribute (PAT/MAIR).
  *
- * @param[in] pat The PAT/MAIR ID (from 0 to 7)
+ * @param[in] mt The PAT/MAIR ID (from 0 to 7)
  *
  * @return The PAT/MAIR value (can be one of PTEDIT_MT_*)
  *
@@ -553,7 +553,7 @@ char ptedit_get_mt(unsigned char mt);
 /**
  * Programs the value of a specific memory type attribute (PAT/MAIR).
  *
- * @param[in] pat The PAT/MAIR ID (from 0 to 7)
+ * @param[in] mt The PAT/MAIR ID (from 0 to 7)
  * @param[in] value The PAT/MAIR value (can be one of PTEDIT_MT_*)
  *
  */
@@ -583,7 +583,7 @@ int ptedit_find_first_mt(unsigned char type);
  * Returns a new page-table entry which uses the given memory type (PAT/MAIR).
  *
  * @param[in] entry A page-table entry
- * @param[in] pat A PAT/MAIR ID (between 0 and 7)
+ * @param[in] mt A PAT/MAIR ID (between 0 and 7)
  *
  * @return A new page-table entry with the given memory type (PAT/MAIR)
  *
@@ -603,12 +603,12 @@ unsigned char ptedit_extract_mt(size_t entry);
 /**
  * Returns a human-readable representation of a memory type (PAT/MAIR value).
  *
- * @param[in] pat A memory type (PAT/MAIR value, e.g., one of PTEDIT_MT_*)
+ * @param[in] mt A memory type (PAT/MAIR value, e.g., one of PTEDIT_MT_*)
  *
  * @return A human-readable representation of the memory type
  *
  */
-const char* ptedit_mt_to_string(unsigned char pat);
+const char* ptedit_mt_to_string(unsigned char mt);
 
 /** @} */
 

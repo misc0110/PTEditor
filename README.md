@@ -3,6 +3,31 @@
 A small library to modify all page-table levels of all processes from user space for x86_64 and ARMv8.
 Also allows to read and program memory types (i.e., PATs on x86 and MAIRs on ARM).
 
+# Installation
+
+The library relies on the `pteditor` kernel module. Both the library and the the kernel module can be build by running
+
+    make
+
+The library can be used by linking it to the application (see `example.c`) or as a single header which can be directly included (see the demos). 
+
+# Requirements
+
+The library does not include on any library. It uses only standard C functionality. 
+
+# Example
+
+The basic functionality (`ptedit_init` and `ptedit_cleanup`) is always required. 
+After the initialization, all functions provided by the library can be used. 
+
+For examples see `example.c` or the examples in the `demo` folder.
+The `demo` folder contains multiple examples:
+* `memmap`: Starting from the root of paging, the demo iterates through all page tables of all levels and dumps the contents of the entries.
+* `map_pt`: A Rowhamer exploit simulation, which maps the page table to a user-accessible address for manipulation.
+* `uncachable`: This demos manipulates the memory type of a mapping to uncachable and back to cachable.
+* `nx`: After setting a function to non-executable, it uses the page tables to make the function executable again.
+* `virt2phys`: Converts a virtual to a physical address.
+
 # API
 
  Basic Functionality            | Descriptions
