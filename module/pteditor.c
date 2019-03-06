@@ -194,7 +194,7 @@ static int resolve_vm(size_t addr, vm_t* entry, int lock) {
   }
   entry->valid |= PTEDIT_VALID_MASK_P4D;
 
-  /* Get offset of PUD (page upper directory */
+  /* Get offset of PUD (page upper directory) */
   entry->pud = pud_offset(entry->p4d, addr);
   if (pud_none(*(entry->pud)) || pud_bad(*(entry->pud))) {
     entry->pud = NULL;
@@ -202,21 +202,13 @@ static int resolve_vm(size_t addr, vm_t* entry, int lock) {
   }
   entry->valid |= PTEDIT_VALID_MASK_PUD;
 #else
-  /* Get offset of PUD (page upper directory */
+  /* Get offset of PUD (page upper directory) */
   entry->pud = pud_offset(entry->pgd, addr);
   if (pud_none(*(entry->pud)) || pud_bad(*(entry->pud))) {
     entry->pud = NULL;
     goto error_out;
   }
   entry->valid |= PTEDIT_VALID_MASK_PUD;
-
-  /* Get offset of PMD (page middle directory) */
-  entry->pmd = pmd_offset(entry->pud, addr);
-  if (pmd_none(*(entry->pmd)) || pmd_bad(*(entry->pmd))) {
-    entry->pmd = NULL;
-    goto error_out;
-  }
-  entry->valid |= PTEDIT_VALID_MASK_PMD;
 #endif
 
 
