@@ -5,6 +5,9 @@
 #include <linux/mm.h>
 #include <linux/module.h>
 #include <linux/version.h>
+#include <linux/ptrace.h>
+#include <linux/proc_fs.h>
+#include <linux/kprobes.h>
 
 #include "pteditor.h"
 
@@ -449,6 +452,24 @@ static struct miscdevice misc_dev = {
     .mode = S_IRWXUGO,
 };
 
+static struct file_operations umem_fops = {.owner = THIS_MODULE};
+
+static int open_umem(struct inode *inode, struct file *filp) { return 0; }
+static int has_umem = 0;
+
+static const char *devmem_hook = "devmem_is_allowed";
+
+
+static int devmem_bypass(struct kretprobe_instance *p, struct pt_regs *regs) {
+  if (regs->ax == 0) {
+    regs->ax = 1;
+  }
+  return 0;
+}
+
+static struct kretprobe probe_devmem = {.handler = devmem_bypass, .maxactive = 20};
+
+
 int init_module(void) {
   int r;
 
@@ -459,6 +480,29 @@ int init_module(void) {
     printk(KERN_ALERT "[pteditor-module] Failed registering device with %d\n", r);
     return 1;
   }
+  
+  probe_devmem.kp.symbol_name = devmem_hook;
+
+  if (register_kretprobe(&probe_devmem) < 0) {
+    printk(KERN_ALERT "[pteditor-module] Could not bypass /dev/mem restriction\n");
+  } else {
+    printk(KERN_INFO "[pteditor-module] /dev/mem is now superuser read-/writable\n");
+  }
+  
+  umem_fops.llseek = (void*)kallsyms_lookup_name("memory_lseek");
+  umem_fops.read = (void*)kallsyms_lookup_name("read_mem");
+  umem_fops.write = (void*)kallsyms_lookup_name("write_mem");
+  umem_fops.mmap = (void*)kallsyms_lookup_name("mmap_mem");
+  umem_fops.open = open_umem;
+
+  if (!umem_fops.llseek || !umem_fops.read || !umem_fops.write ||
+      !umem_fops.mmap || !umem_fops.open) {
+    printk(KERN_ALERT"[pteditor-module] Could not create unprivileged memory access\n");
+  } else {
+    proc_create("umem", 0666, NULL, &umem_fops);
+    printk(KERN_INFO "[pteditor-module] Unprivileged memory access via /proc/umem set up\n");
+    has_umem = 1;
+  }
 
   printk(KERN_INFO "[pteditor-module] Loaded.\n");
 
@@ -467,6 +511,13 @@ int init_module(void) {
 
 void cleanup_module(void) {
   misc_deregister(&misc_dev);
-
+  
+  unregister_kretprobe(&probe_devmem);
+  
+  if (has_umem) {
+    printk(KERN_INFO "[pteditor-module] Remove unprivileged memory access\n");
+    remove_proc_entry("umem", NULL);
+  }
+  
   printk(KERN_INFO "[pteditor-module] Removed.\n");
 }
