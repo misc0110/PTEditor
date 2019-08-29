@@ -174,7 +174,9 @@ static int resolve_vm(size_t addr, vm_t* entry, int lock) {
   entry->valid = 0;
 
   mm = get_mm(entry->pid);
-  if(!mm) return 1;
+  if(!mm) {
+      return 1;
+  }
 
   /* Lock mm */
   if(lock) down_read(&mm->mmap_sem);
@@ -199,7 +201,7 @@ static int resolve_vm(size_t addr, vm_t* entry, int lock) {
 
   /* Get offset of PUD (page upper directory) */
   entry->pud = pud_offset(entry->p4d, addr);
-  if (pud_none(*(entry->pud)) || pud_bad(*(entry->pud))) {
+  if (pud_none(*(entry->pud))) {
     entry->pud = NULL;
     goto error_out;
   }
@@ -207,7 +209,7 @@ static int resolve_vm(size_t addr, vm_t* entry, int lock) {
 #else
   /* Get offset of PUD (page upper directory) */
   entry->pud = pud_offset(entry->pgd, addr);
-  if (pud_none(*(entry->pud)) || pud_bad(*(entry->pud))) {
+  if (pud_none(*(entry->pud))) {
     entry->pud = NULL;
     goto error_out;
   }
@@ -217,7 +219,7 @@ static int resolve_vm(size_t addr, vm_t* entry, int lock) {
 
   /* Get offset of PMD (page middle directory) */
   entry->pmd = pmd_offset(entry->pud, addr);
-  if (pmd_none(*(entry->pmd)) || pmd_bad(*(entry->pmd))) {
+  if (pmd_none(*(entry->pmd)) || pud_large(*(entry->pud))) {
     entry->pmd = NULL;
     goto error_out;
   }
@@ -225,7 +227,7 @@ static int resolve_vm(size_t addr, vm_t* entry, int lock) {
 
   /* Map PTE (page table entry) */
   entry->pte = pte_offset_map(entry->pmd, addr);
-  if (entry->pte == NULL) {
+  if (entry->pte == NULL || pmd_large(*(entry->pmd))) {
     goto error_out;
   }
   entry->valid |= PTEDIT_VALID_MASK_PTE;
@@ -300,22 +302,22 @@ static int update_vm(ptedit_entry_t* new_entry, int lock) {
 static void vm_to_user(ptedit_entry_t* user, vm_t* vm) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
 #if CONFIG_PGTABLE_LEVELS > 4
-    user->p4d = (vm->p4d)->p4d;
+    if(vm->p4d) user->p4d = (vm->p4d)->p4d;
 #else
-    user->p4d = (vm->p4d)->pgd.pgd;
+    if(vm->p4d) user->p4d = (vm->p4d)->pgd.pgd;
 #endif
 #endif
 
 #if defined(__i386__) || defined(__x86_64__)
-    user->pgd = (vm->pgd)->pgd;
-    user->pmd = (vm->pmd)->pmd;
-    user->pud = (vm->pud)->pud;
-    user->pte = (vm->pte)->pte;
+    if(vm->pgd) user->pgd = (vm->pgd)->pgd;
+    if(vm->pmd) user->pmd = (vm->pmd)->pmd;
+    if(vm->pud) user->pud = (vm->pud)->pud;
+    if(vm->pte) user->pte = (vm->pte)->pte;
 #elif defined(__aarch64__)
-    user->pgd = pgd_val(*(vm->pgd));
-    user->pmd = pmd_val(*(vm->pmd));
-    user->pud = pud_val(*(vm->pud));
-    user->pte = pte_val(*(vm->pte));
+    if(vm->pgd) user->pgd = pgd_val(*(vm->pgd));
+    if(vm->pmd) user->pmd = pmd_val(*(vm->pmd));
+    if(vm->pud) user->pud = pud_val(*(vm->pud));
+    if(vm->pte) user->pte = pte_val(*(vm->pte));
 #endif
     user->valid = vm->valid;
 }
@@ -329,11 +331,8 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
         vm_t vm;
         (void)from_user(&vm_user, (void*)ioctl_param, sizeof(vm_user));
         vm.pid = vm_user.pid;
-        if(!resolve_vm(vm_user.vaddr, &vm, !mm_is_locked)) {
-            vm_to_user(&vm_user, &vm);
-        } else {
-            memset(&vm_user, 0, sizeof(vm_user));
-        }
+        resolve_vm(vm_user.vaddr, &vm, !mm_is_locked);
+        vm_to_user(&vm_user, &vm);
         (void)to_user((void*)ioctl_param, &vm_user, sizeof(vm_user));
         return 0;
     }
