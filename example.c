@@ -44,27 +44,7 @@ int main(int argc, char *argv[]) {
     printf(TAG_FAIL "Could not resolve PTs\n");
     goto error;
   }
-
-  if(vm.valid & PTEDIT_VALID_MASK_PGD) {
-    printf("PGD of address\n");
-    ptedit_print_entry(vm.pgd);
-  }
-  if(vm.valid & PTEDIT_VALID_MASK_P4D) {
-    printf("P4D of address\n");
-    ptedit_print_entry(vm.p4d);
-  }
-  if(vm.valid & PTEDIT_VALID_MASK_PMD) {
-    printf("PMD of address\n");
-    ptedit_print_entry(vm.pmd);
-  }
-  if(vm.valid & PTEDIT_VALID_MASK_PUD) {
-    printf("PUD of address\n");
-    ptedit_print_entry(vm.pud);
-  }
-  if(vm.valid & PTEDIT_VALID_MASK_PTE) {
-    printf("PTE of address\n");
-    ptedit_print_entry(vm.pte);
-  }
+  print_ptedit_entry_t(vm);
 
   printf(TAG_PROGRESS "address[0] = " COLOR_YELLOW "%c" COLOR_RESET"\n", *(volatile char*)address);
   if(*(volatile char*)address == 'A') {
