@@ -506,6 +506,14 @@ const char* ptedit_mt_to_string(unsigned char mt);
  */
 
 /**
+ * Pretty prints a ptedit_entry_t struct.
+ *
+ * @param[in] entry A ptedit_entry_t struct
+ *
+ */
+void print_ptedit_entry_t(ptedit_entry_t entry);
+
+/**
  * Pretty prints a page-table entry.
  *
  * @param[in] entry A page-table entry

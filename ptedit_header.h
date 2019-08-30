@@ -623,6 +623,14 @@ const char* ptedit_mt_to_string(unsigned char mt);
  */
 
 /**
+ * Pretty prints a ptedit_entry_t struct.
+ *
+ * @param[in] entry A ptedit_entry_t struct
+ *
+ */
+void print_ptedit_entry_t(ptedit_entry_t entry);
+
+/**
  * Pretty prints a page-table entry.
  *
  * @param[in] entry A page-table entry
@@ -773,6 +781,29 @@ void ptedit_print_entry(size_t entry) {
     }
 }
 
+// ---------------------------------------------------------------------------
+void print_ptedit_entry_t(ptedit_entry_t entry) {
+  if(entry.valid & PTEDIT_VALID_MASK_PGD) {
+    printf("PGD of address\n");
+    ptedit_print_entry(entry.pgd);
+  }
+  if(entry.valid & PTEDIT_VALID_MASK_P4D) {
+    printf("P4D of address\n");
+    ptedit_print_entry(entry.p4d);
+  }
+  if(entry.valid & PTEDIT_VALID_MASK_PUD) {
+    printf("PUD of address\n");
+    ptedit_print_entry(entry.pud);
+  }
+  if(entry.valid & PTEDIT_VALID_MASK_PMD) {
+    printf("PMD of address\n");
+    ptedit_print_entry(entry.pmd);
+  }
+  if(entry.valid & PTEDIT_VALID_MASK_PTE) {
+    printf("PTE of address\n");
+    ptedit_print_entry(entry.pte);
+  }
+}
 
 // ---------------------------------------------------------------------------
 int ptedit_init() {
