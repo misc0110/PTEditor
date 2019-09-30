@@ -628,7 +628,7 @@ const char* ptedit_mt_to_string(unsigned char mt);
  * @param[in] entry A ptedit_entry_t struct
  *
  */
-void print_ptedit_entry_t(ptedit_entry_t entry);
+void ptedit_print_entry_t(ptedit_entry_t entry);
 
 /**
  * Pretty prints a page-table entry.
@@ -782,7 +782,7 @@ void ptedit_print_entry(size_t entry) {
 }
 
 // ---------------------------------------------------------------------------
-void print_ptedit_entry_t(ptedit_entry_t entry) {
+void ptedit_print_entry_t(ptedit_entry_t entry) {
   if(entry.valid & PTEDIT_VALID_MASK_PGD) {
     printf("PGD of address\n");
     ptedit_print_entry(entry.pgd);
