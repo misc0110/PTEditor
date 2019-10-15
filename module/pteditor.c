@@ -16,6 +16,8 @@ MODULE_DESCRIPTION("Device to play around with paging structures");
 MODULE_LICENSE("GPL");
 
 #if defined(__aarch64__)
+#include <linux/hugetlb.h>
+
 static inline pte_t native_make_pte(pteval_t val)
 {
   return __pte(val);
@@ -39,6 +41,14 @@ static inline pud_t native_make_pud(pudval_t val)
 static inline pteval_t native_pte_val(pte_t pte)
 {
   return pte_val(pte);
+}
+
+static inline int pud_large(pud_t pud) {
+  return pud_huge(pud);
+}
+
+static inline int pmd_large(pmd_t pmd) {
+  return pmd_huge(pmd);
 }
 #endif
 
@@ -451,6 +461,7 @@ static struct miscdevice misc_dev = {
     .mode = S_IRWXUGO,
 };
 
+#if !defined(__aarch64__)
 static struct file_operations umem_fops = {.owner = THIS_MODULE};
 
 static int open_umem(struct inode *inode, struct file *filp) { return 0; }
@@ -467,11 +478,10 @@ static int devmem_bypass(struct kretprobe_instance *p, struct pt_regs *regs) {
 }
 
 static struct kretprobe probe_devmem = {.handler = devmem_bypass, .maxactive = 20};
-
+#endif
 
 int init_module(void) {
   int r;
-
 
   /* Register device */
   r = misc_register(&misc_dev);
@@ -480,6 +490,7 @@ int init_module(void) {
     return 1;
   }
   
+#if !defined(__aarch64__)
   probe_devmem.kp.symbol_name = devmem_hook;
 
   if (register_kretprobe(&probe_devmem) < 0) {
@@ -502,7 +513,7 @@ int init_module(void) {
     printk(KERN_INFO "[pteditor-module] Unprivileged memory access via /proc/umem set up\n");
     has_umem = 1;
   }
-
+#endif
   printk(KERN_INFO "[pteditor-module] Loaded.\n");
 
   return 0;
@@ -511,12 +522,13 @@ int init_module(void) {
 void cleanup_module(void) {
   misc_deregister(&misc_dev);
   
+#if !defined(__aarch64__)
   unregister_kretprobe(&probe_devmem);
   
   if (has_umem) {
     printk(KERN_INFO "[pteditor-module] Remove unprivileged memory access\n");
     remove_proc_entry("umem", NULL);
   }
-  
+#endif
   printk(KERN_INFO "[pteditor-module] Removed.\n");
 }
