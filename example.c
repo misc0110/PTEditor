@@ -27,6 +27,8 @@ int main(int argc, char *argv[]) {
     printf(TAG_FAIL "Could not initialize ptedit (did you load the kernel module?)\n");
     return 1;
   }
+  
+//   ptedit_use_implementation(PTEDIT_IMPL_KERNEL);
 
   char page[ptedit_get_pagesize()];
 

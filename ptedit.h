@@ -7,6 +7,19 @@
 #include <sys/types.h>
 
 /**
+ * The implementation of PTEditor to use
+ * 
+ * @defgroup PTEDITOR_IMPLEMENTATION PTEditor Implementation
+ * 
+ * @{
+ */
+
+/** Use the kernel to resolve and update paging structures */
+#define PTEDIT_IMPL_KERNEL 0
+/** Use the user-space implemenation to resolve and update paging structures */
+#define PTEDIT_IMPL_USER   1
+
+/**
  * The bits in a page-table entry
  *
  * @defgroup PAGETABLE_BITS Page Table Bits
@@ -169,6 +182,14 @@ int ptedit_init();
  */
 void ptedit_cleanup();
 
+/**
+ * Switch between kernel and user-space implementation
+ * 
+ * @param[in] implementation The implementation to use, either PTEDIT_IMPL_KERNEL or PTEDIT_IMPL_USER
+ * 
+ */
+void ptedit_use_implementation(int implementation);
+
 /** @} */
 
 
@@ -182,6 +203,10 @@ void ptedit_cleanup();
  * @{
  */
 
+typedef ptedit_entry_t (*ptedit_resolve_t)(void*, pid_t);
+typedef void (*ptedit_update_t)(void*, pid_t, ptedit_entry_t*);
+
+
 /**
  * Resolves the page-table entries of all levels for a virtual address of a given process.
  *
@@ -190,7 +215,8 @@ void ptedit_cleanup();
  *
  * @return A structure containing the page-table entries of all levels.
  */
-ptedit_entry_t ptedit_resolve(void* address, pid_t pid);
+ptedit_resolve_t ptedit_resolve;
+// ptedit_entry_t ptedit_resolve(void* address, pid_t pid);
 
 /**
  * Updates one or more page-table entries for a virtual address of a given process.
@@ -201,7 +227,9 @@ ptedit_entry_t ptedit_resolve(void* address, pid_t pid);
  * @param[in] vm A structure containing the values for the page-table entries and a bitmask indicating which entries to update
  *
  */
-void ptedit_update(void* address, pid_t pid, ptedit_entry_t* vm);
+ptedit_update_t ptedit_update;
+
+// void ptedit_update(void* address, pid_t pid, ptedit_entry_t* vm);
 
 /**
  * Sets a bit directly in the PTE of an address.

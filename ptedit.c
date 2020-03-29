@@ -13,9 +13,12 @@
 
 
 static int ptedit_fd;
+static int ptedit_umem;
+static int ptedit_pagesize;
+static size_t ptedit_paging_root;
 
 // ---------------------------------------------------------------------------
-ptedit_entry_t ptedit_resolve(void* address, pid_t pid) {
+ptedit_entry_t ptedit_resolve_kernel(void* address, pid_t pid) {
     ptedit_entry_t vm;
     vm.vaddr = (size_t)address;
     vm.pid = (size_t)pid;
@@ -23,14 +26,138 @@ ptedit_entry_t ptedit_resolve(void* address, pid_t pid) {
     return vm;
 }
 
+// ---------------------------------------------------------------------------
+ptedit_entry_t ptedit_resolve_user(void* address, pid_t pid) {
+#if defined(__i386__) || defined(__x86_64__)
+    size_t pml4[ptedit_pagesize / sizeof(size_t)], pdpt[ptedit_pagesize / sizeof(size_t)],
+      pd[ptedit_pagesize / sizeof(size_t)], pt[ptedit_pagesize / sizeof(size_t)];
+
+    size_t root = (pid == 0) ? ptedit_paging_root : ptedit_get_paging_root(pid);
+    ptedit_read_physical_page(root / ptedit_pagesize, (char *)pml4);
+
+    int pml4i, pdpti, pdi, pti;
+    size_t addr = (size_t)address;
+    pml4i = (addr >> 39ull) & 511;
+    pdpti = (addr >> 30ull) & 511;
+    pdi = (addr >> 21ull) & 511;
+    pti = (addr >> 12ull) & 511;
+    
+    ptedit_entry_t resolved;
+    memset(&resolved, 0, sizeof(resolved));
+    resolved.vaddr = (size_t)address;
+    resolved.pid = (size_t)pid;
+    resolved.valid = 0;
+    
+    size_t pml4_entry = pml4[pml4i];
+    if(!(pml4_entry & (1ull << PTEDIT_PAGE_BIT_PRESENT))) {
+        return resolved;
+    }
+    resolved.pml4 = pml4_entry;
+    resolved.valid |= PTEDIT_VALID_MASK_P4D;
+    resolved.pml5 = pml4_entry;
+    resolved.valid |= PTEDIT_VALID_MASK_PGD;
+
+    ptedit_read_physical_page(ptedit_get_pfn(pml4_entry), (char *)pdpt);
+    size_t pdpt_entry = pdpt[pdpti];
+    if(!(pdpt_entry & (1ull << PTEDIT_PAGE_BIT_PRESENT))) {
+        return resolved;
+    }
+    resolved.pdpt = pdpt_entry;
+    resolved.valid |= PTEDIT_VALID_MASK_PUD;
+    
+    ptedit_read_physical_page(ptedit_get_pfn(pdpt_entry), (char *)pd);
+    size_t pd_entry = pd[pdi];
+    if(!(pd_entry & (1ull << PTEDIT_PAGE_BIT_PRESENT))) {
+        return resolved;
+    }
+    resolved.pd = pd_entry;
+    resolved.valid |= PTEDIT_VALID_MASK_PMD;
+    
+    if(!(pd_entry & (1ull << PTEDIT_PAGE_BIT_PSE))) {
+        // normal 4kb page
+        ptedit_read_physical_page(ptedit_get_pfn(pd_entry), (char *)pt);
+        size_t pt_entry = pt[pti];
+        if(!(pt_entry & (1ull << PTEDIT_PAGE_BIT_PRESENT))) {
+            return resolved;
+        }
+        resolved.pte = pt_entry;
+        resolved.valid |= PTEDIT_VALID_MASK_PTE;
+    }
+    return resolved;
+#else
+    return ptedit_resolve_kernel(address, pid);
+#endif
+}
 
 // ---------------------------------------------------------------------------
-void ptedit_update(void* address, pid_t pid, ptedit_entry_t* vm) {
+void ptedit_update_kernel(void* address, pid_t pid, ptedit_entry_t* vm) {
     vm->vaddr = (size_t)address;
     vm->pid = (size_t)pid;
     ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_VM_UPDATE, (size_t)vm);
 }
 
+// ---------------------------------------------------------------------------
+void ptedit_update_user(void* address, pid_t pid, ptedit_entry_t* vm) {
+#if defined(__i386__) || defined(__x86_64__)
+    size_t pml4[ptedit_pagesize / sizeof(size_t)], pdpt[ptedit_pagesize / sizeof(size_t)],
+      pd[ptedit_pagesize / sizeof(size_t)], pt[ptedit_pagesize / sizeof(size_t)];
+
+    size_t root = (pid == 0) ? ptedit_paging_root : ptedit_get_paging_root(pid);
+    ptedit_read_physical_page(root / ptedit_pagesize, (char *)pml4);
+
+    int pml4i, pdpti, pdi, pti;
+    size_t addr = (size_t)address;
+    pml4i = (addr >> 39ull) & 511;
+    pdpti = (addr >> 30ull) & 511;
+    pdi = (addr >> 21ull) & 511;
+    pti = (addr >> 12ull) & 511;
+    
+    size_t pml4_entry = pml4[pml4i];
+    if(!(pml4_entry & (1ull << PTEDIT_PAGE_BIT_PRESENT))) {
+        return;
+    }
+    if(vm->valid & PTEDIT_VALID_MASK_P4D) pml4[pml4i] = vm->pml4;
+
+    int valid = PTEDIT_VALID_MASK_P4D;
+    
+    ptedit_read_physical_page(ptedit_get_pfn(pml4_entry), (char *)pdpt);
+    size_t pdpt_entry = pdpt[pdpti];
+    if(!(pdpt_entry & (1ull << PTEDIT_PAGE_BIT_PRESENT))) {
+        goto update;
+    }
+    valid |= PTEDIT_VALID_MASK_PUD;
+    if(vm->valid & PTEDIT_VALID_MASK_PUD) pdpt[pdpti] = vm->pdpt;
+    
+    ptedit_read_physical_page(ptedit_get_pfn(pdpt_entry), (char *)pd);
+    size_t pd_entry = pd[pdi];
+    if(!(pd_entry & (1ull << PTEDIT_PAGE_BIT_PRESENT))) {
+        goto update;
+    }
+    valid |= PTEDIT_VALID_MASK_PMD;
+    if(vm->valid & PTEDIT_VALID_MASK_PMD) pd[pdi] = vm->pd;
+    
+    if(!(pd_entry & (1ull << PTEDIT_PAGE_BIT_PSE))) {
+        // normal 4kb page
+        ptedit_read_physical_page(ptedit_get_pfn(pd_entry), (char *)pt);
+        size_t pt_entry = pt[pti];
+        if(!(pt_entry & (1ull << PTEDIT_PAGE_BIT_PRESENT))) {
+            goto update;
+        }
+        valid |= PTEDIT_VALID_MASK_PTE;
+        if(vm->valid & PTEDIT_VALID_MASK_PTE) pt[pti] = vm->pte;
+    }
+    
+    update:
+    if((vm->valid & PTEDIT_VALID_MASK_PTE) && (valid & PTEDIT_VALID_MASK_PTE)) ptedit_write_physical_page(ptedit_get_pfn(pd_entry), (char*)pt);
+    if((vm->valid & PTEDIT_VALID_MASK_PMD) && (valid & PTEDIT_VALID_MASK_PMD)) ptedit_write_physical_page(ptedit_get_pfn(pdpt_entry), (char*)pd);
+    if((vm->valid & PTEDIT_VALID_MASK_PUD) && (valid & PTEDIT_VALID_MASK_PUD)) ptedit_write_physical_page(ptedit_get_pfn(pml4_entry), (char*)pdpt);
+    if((vm->valid & PTEDIT_VALID_MASK_PGD) && (valid & PTEDIT_VALID_MASK_PGD)) ptedit_write_physical_page(root / ptedit_pagesize, (char*)pml4);
+    
+    ptedit_invalidate_tlb(address);
+#else
+    ptedit_update_kernel(address, pid, vm);
+#endif
+}
 
 // ---------------------------------------------------------------------------
 size_t ptedit_set_pfn(size_t pte, size_t pfn) {
@@ -159,6 +286,13 @@ int ptedit_init() {
     fprintf(stderr, PTEDIT_COLOR_RED "[-]" PTEDIT_COLOR_RESET "Error: Could not open PTEditor device: %s\n", PTEDITOR_DEVICE_PATH);
     return -1;
   }
+  ptedit_umem = open("/proc/umem", O_RDWR);
+  if(ptedit_umem > 0) {
+      ptedit_use_implementation(PTEDIT_IMPL_USER);
+  } else {
+      ptedit_use_implementation(PTEDIT_IMPL_KERNEL);
+  }
+  ptedit_pagesize = getpagesize();
   return 0;
 }
 
@@ -168,6 +302,24 @@ void ptedit_cleanup() {
    if(ptedit_fd >= 0) {
        close(ptedit_fd);
    }
+   if(ptedit_umem > 0) {
+       close(ptedit_umem);
+   }
+}
+
+
+// ---------------------------------------------------------------------------
+void ptedit_use_implementation(int implementation) {
+    if(implementation == PTEDIT_IMPL_KERNEL) {
+        ptedit_resolve = ptedit_resolve_kernel;
+        ptedit_update = ptedit_update_kernel;
+    } else if(implementation == PTEDIT_IMPL_USER) {
+        ptedit_resolve = ptedit_resolve_user;
+        ptedit_update = ptedit_update_user;
+        ptedit_paging_root = ptedit_get_paging_root(0);
+    } else {
+        fprintf(stderr, PTEDIT_COLOR_RED "[-]" PTEDIT_COLOR_RESET "Error: PTEditor implementation not supported!\n");
+    }
 }
 
 
@@ -179,19 +331,27 @@ int ptedit_get_pagesize() {
 
 // ---------------------------------------------------------------------------
 void ptedit_read_physical_page(size_t pfn, char* buffer) {
-    ptedit_page_t page;
-    page.buffer = (unsigned char*)buffer;
-    page.pfn = pfn;
-    ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_READ_PAGE, (size_t)&page);
+    if(ptedit_umem > 0) {
+        pread(ptedit_umem, buffer, ptedit_pagesize, pfn * ptedit_pagesize);
+    } else {
+        ptedit_page_t page;
+        page.buffer = (unsigned char*)buffer;
+        page.pfn = pfn;
+        ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_READ_PAGE, (size_t)&page);
+    }
 }
 
 
 // ---------------------------------------------------------------------------
 void ptedit_write_physical_page(size_t pfn, char* content) {
-    ptedit_page_t page;
-    page.buffer = (unsigned char*)content;
-    page.pfn = pfn;
-    ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_WRITE_PAGE, (size_t)&page);
+    if(ptedit_umem > 0) {
+        pwrite(ptedit_umem, content, ptedit_pagesize, pfn * ptedit_pagesize);
+    } else {
+        ptedit_page_t page;
+        page.buffer = (unsigned char*)content;
+        page.pfn = pfn;
+        ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_WRITE_PAGE, (size_t)&page);
+    }
 }
 
 

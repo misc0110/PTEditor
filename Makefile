@@ -7,10 +7,10 @@ pteditor: module/pteditor.c
 	cd module && make
 
 ptedit.o: ptedit.c ptedit.h
-	gcc -Wall -Wextra ptedit.c -c
+	gcc -Wall -Wextra ptedit.c -g -c
 
 example: example.c ptedit.o
-	gcc -Wall -Wextra example.c ptedit.o -o example
+	gcc -Wall -Wextra example.c ptedit.o -g -o example
 
 demos: header pteditor
 	cd demos && make

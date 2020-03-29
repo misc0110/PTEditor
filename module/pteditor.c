@@ -461,12 +461,12 @@ static struct miscdevice misc_dev = {
     .mode = S_IRWXUGO,
 };
 
-#if !defined(__aarch64__)
 static struct file_operations umem_fops = {.owner = THIS_MODULE};
 
 static int open_umem(struct inode *inode, struct file *filp) { return 0; }
 static int has_umem = 0;
 
+#if !defined(__aarch64__)
 static const char *devmem_hook = "devmem_is_allowed";
 
 
@@ -498,7 +498,8 @@ int init_module(void) {
   } else {
     printk(KERN_INFO "[pteditor-module] /dev/mem is now superuser read-/writable\n");
   }
-  
+#endif
+
   umem_fops.llseek = (void*)kallsyms_lookup_name("memory_lseek");
   umem_fops.read = (void*)kallsyms_lookup_name("read_mem");
   umem_fops.write = (void*)kallsyms_lookup_name("write_mem");
@@ -513,7 +514,6 @@ int init_module(void) {
     printk(KERN_INFO "[pteditor-module] Unprivileged memory access via /proc/umem set up\n");
     has_umem = 1;
   }
-#endif
   printk(KERN_INFO "[pteditor-module] Loaded.\n");
 
   return 0;
@@ -524,11 +524,11 @@ void cleanup_module(void) {
   
 #if !defined(__aarch64__)
   unregister_kretprobe(&probe_devmem);
-  
+#endif
+
   if (has_umem) {
     printk(KERN_INFO "[pteditor-module] Remove unprivileged memory access\n");
     remove_proc_entry("umem", NULL);
   }
-#endif
   printk(KERN_INFO "[pteditor-module] Removed.\n");
 }
