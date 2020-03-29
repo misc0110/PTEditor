@@ -14,6 +14,9 @@ example: example.c ptedit.o
 
 demos: header pteditor
 	cd demos && make
+	
+deb:
+	dpkg-buildpackage
 
 clean:
 	cd module && make clean
