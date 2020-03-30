@@ -399,7 +399,7 @@ typedef struct {
 typedef struct {
     size_t present                 :2;
     size_t ignored_1               :10;
-    size_t table_address           :36;
+    size_t pfn                     :36;
     size_t reserved                :4;
     size_t ignored_2               :7;
     size_t pxn_table               :1;
