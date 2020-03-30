@@ -33,6 +33,26 @@ uint64_t rdtsc() {
 
 #define REPEAT 10000
 
+int is_same(ptedit_entry_t* e1, ptedit_entry_t* e2) {
+    int diff = 0;
+    if((e1->valid & PTEDIT_VALID_MASK_PGD) && (e2->valid & PTEDIT_VALID_MASK_PGD)) {
+        diff |= e1->pgd ^ e2->pgd;
+    }
+    if((e1->valid & PTEDIT_VALID_MASK_P4D) && (e2->valid & PTEDIT_VALID_MASK_P4D)) {
+        diff |= e1->p4d ^ e2->p4d;
+    }    
+    if((e1->valid & PTEDIT_VALID_MASK_PUD) && (e2->valid & PTEDIT_VALID_MASK_PUD)) {
+        diff |= e1->pud ^ e2->pud;
+    }
+    if((e1->valid & PTEDIT_VALID_MASK_PMD) && (e2->valid & PTEDIT_VALID_MASK_PMD)) {
+        diff |= e1->pmd ^ e2->pmd;
+    }
+    if((e1->valid & PTEDIT_VALID_MASK_PTE) && (e2->valid & PTEDIT_VALID_MASK_PTE)) {
+        diff |= e1->pte ^ e2->pte;
+    }
+    return !diff;
+}
+
 int main(int argc, char *argv[]) {
     if (ptedit_init()) {
       printf(TAG_FAIL "Error: Could not initalize PTEditor, did you load the kernel module?\n");
@@ -62,8 +82,10 @@ int main(int argc, char *argv[]) {
     stop = rdtsc();
     printf(TAG_OK "User implementation takes " COLOR_YELLOW "%d" COLOR_RESET " cycles/resolve\n", (int)((stop - start) / REPEAT));
 
-    if(memcmp(&entry, &entry_us, sizeof(entry))) {
+    if(!is_same(&entry, &entry_us)) {
         printf(TAG_FAIL "Kernel and user-space resolver do not agree!\n");
+        ptedit_print_entry_t(entry);
+        ptedit_print_entry_t(entry_us);
     }
     
     ptedit_use_implementation(PTEDIT_IMPL_USER_PREAD);
@@ -74,8 +96,10 @@ int main(int argc, char *argv[]) {
     stop = rdtsc();
     printf(TAG_OK "User (pread) implementation takes " COLOR_YELLOW "%d" COLOR_RESET " cycles/resolve\n", (int)((stop - start) / REPEAT));
 
-    if(memcmp(&entry, &entry_us, sizeof(entry))) {
+    if(!is_same(&entry, &entry_us)) {
         printf(TAG_FAIL "Kernel and user-space resolver do not agree!\n");
+        ptedit_print_entry_t(entry);
+        ptedit_print_entry_t(entry_us);
     }
     
     

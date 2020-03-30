@@ -93,38 +93,42 @@ static ptedit_entry_t ptedit_resolve_user_ext(void* address, pid_t pid, ptedit_p
     if(ptedit_paging_definition.has_p4d) {    
         size_t pfn = (size_t)(ptedit_cast(pgd_entry, ptedit_pgd_t).pfn);
         p4d_entry = deref(pfn * ptedit_pagesize + p4di * sizeof(size_t));
-        if(ptedit_cast(p4d_entry, ptedit_p4d_t).present != PTEDIT_PAGE_PRESENT) {
-            return resolved;
-        }
+        resolved.valid |= PTEDIT_VALID_MASK_P4D;
     } else {
         p4d_entry = pgd_entry;
     }
     resolved.p4d = p4d_entry;
-    resolved.valid |= PTEDIT_VALID_MASK_P4D;
 
+    if(ptedit_cast(p4d_entry, ptedit_p4d_t).present != PTEDIT_PAGE_PRESENT) {
+        return resolved;
+    }
+
+    
     if(ptedit_paging_definition.has_pud) {
         size_t pfn = (size_t)(ptedit_cast(p4d_entry, ptedit_p4d_t).pfn);
         pud_entry = deref(pfn * ptedit_pagesize + pudi * sizeof(size_t));
-        if(ptedit_cast(pud_entry, ptedit_pud_t).present != PTEDIT_PAGE_PRESENT) {
-            return resolved;
-        }
+        resolved.valid |= PTEDIT_VALID_MASK_PUD;
     } else {
         pud_entry = p4d_entry;
     }
     resolved.pud = pud_entry;
-    resolved.valid |= PTEDIT_VALID_MASK_PUD;
+
+    if(ptedit_cast(pud_entry, ptedit_pud_t).present != PTEDIT_PAGE_PRESENT) {
+        return resolved;
+    }
     
     if(ptedit_paging_definition.has_pmd) {
         size_t pfn = (size_t)(ptedit_cast(pud_entry, ptedit_pud_t).pfn);
         pmd_entry = deref(pfn * ptedit_pagesize + pmdi * sizeof(size_t));
-        if(ptedit_cast(pmd_entry, ptedit_pmd_t).present != PTEDIT_PAGE_PRESENT) {
-            return resolved;
-        }
+        resolved.valid |= PTEDIT_VALID_MASK_PMD;
     } else {
         pmd_entry = pud_entry;
     }
     resolved.pmd = pmd_entry;
-    resolved.valid |= PTEDIT_VALID_MASK_PMD;
+
+    if(ptedit_cast(pmd_entry, ptedit_pmd_t).present != PTEDIT_PAGE_PRESENT) {
+        return resolved;
+    }
     
 #if defined(__i386__) || defined(__x86_64__)
     if(!ptedit_cast(pmd_entry, ptedit_pmd_t).size) {
@@ -132,11 +136,11 @@ static ptedit_entry_t ptedit_resolve_user_ext(void* address, pid_t pid, ptedit_p
         // normal 4kb page
         size_t pfn = (size_t)(ptedit_cast(pmd_entry, ptedit_pmd_t).pfn);
         pt_entry = deref(pfn * ptedit_pagesize + pti * sizeof(size_t)); //pt[pti];
+        resolved.pte = pt_entry;
+        resolved.valid |= PTEDIT_VALID_MASK_PTE;
         if(ptedit_cast(pt_entry, ptedit_pte_t).present != PTEDIT_PAGE_PRESENT) {
             return resolved;
         }
-        resolved.pte = pt_entry;
-        resolved.valid |= PTEDIT_VALID_MASK_PTE;
 #if defined(__i386__) || defined(__x86_64__)
     }
 #endif
