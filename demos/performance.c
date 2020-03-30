@@ -14,21 +14,21 @@
 
 unsigned long target;
 
-int is_normal_page(size_t entry) {
-#if defined(__i386__) || defined(__x86_64__)
-  return !(entry & (1ull << PTEDIT_PAGE_BIT_PSE));
-#elif defined(__aarch64__)
-  return 1;
-#endif
-}
 
 uint64_t rdtsc() {
+#if defined(__i386__) || defined(__x86_64__)
   uint64_t a, d;
   asm volatile("mfence");
   asm volatile("rdtsc" : "=a"(a), "=d"(d));
   a = (d << 32) | a;
   asm volatile("mfence");
   return a;
+#elif defined(__aarch64__)
+#include <time.h>
+  struct timespec t1;
+  clock_gettime(CLOCK_MONOTONIC, &t1);
+  return t1.tv_sec * 1000 * 1000 * 1000ULL + t1.tv_nsec;
+#endif
 }
 
 #define REPEAT 10000
@@ -79,19 +79,6 @@ int main(int argc, char *argv[]) {
     }
     
     
-    if(is_normal_page(entry.pd)) {
-        printf(TAG_PROGRESS "Page is 4KB\n");
-        ptedit_print_entry(entry.pte);
-        phys = (ptedit_get_pfn(entry.pte) << 12) | (((size_t)&target) & 0xfff);
-    } else {
-        printf(TAG_PROGRESS "Page is 2MB\n");
-        ptedit_print_entry(entry.pd);
-        phys = (ptedit_get_pfn(entry.pd) << 21) | (((size_t)&target) & 0x1fffff);
-    }
-
-    printf(TAG_OK "Virtual address: %p\n", &target);
-    printf(TAG_OK "Physical address: 0x%zx\n", phys);
-
     ptedit_cleanup();
 
     printf(TAG_OK "Done\n");
