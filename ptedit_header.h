@@ -401,6 +401,190 @@ size_t ptedit_pte_get_pfn(void* address, pid_t pid);
  */
 void ptedit_pte_set_pfn(void* address, pid_t pid, size_t pfn);
 
+
+#if defined(__i386__) || defined(__x86_64__)
+#define PTEDIT_PAGE_PRESENT 1
+
+typedef struct {
+  size_t present                   :1;
+  size_t writeable                 :1;
+  size_t user_access               :1;
+  size_t write_through             :1;
+  size_t cache_disabled            :1;
+  size_t accessed                  :1;
+  size_t ignored_3                 :1;
+  size_t size                      :1;
+  size_t ignored_2                 :4;
+  size_t pfn                       :28;
+  size_t reserved_1                :12;
+  size_t ignored_1                 :11;
+  size_t execution_disabled        :1;
+} __attribute__((__packed__)) ptedit_pgd_t;
+
+typedef struct {
+  size_t present                   :1;
+  size_t writeable                 :1;
+  size_t user_access               :1;
+  size_t write_through             :1;
+  size_t cache_disabled            :1;
+  size_t accessed                  :1;
+  size_t ignored_3                 :1;
+  size_t size                      :1;
+  size_t ignored_2                 :4;
+  size_t pfn                       :28;
+  size_t reserved_1                :12;
+  size_t ignored_1                 :11;
+  size_t execution_disabled        :1;
+} __attribute__((__packed__)) ptedit_p4d_t;
+
+typedef struct {
+  size_t present                   :1;
+  size_t writeable                 :1;
+  size_t user_access               :1;
+  size_t write_through             :1;
+  size_t cache_disabled            :1;
+  size_t accessed                  :1;
+  size_t ignored_3                 :1;
+  size_t size                      :1;
+  size_t ignored_2                 :4;
+  size_t pfn                       :28;
+  size_t reserved_1                :12;
+  size_t ignored_1                 :11;
+  size_t execution_disabled        :1;
+} __attribute__((__packed__)) ptedit_pud_t;
+
+
+typedef struct {
+  size_t present                   :1;
+  size_t writeable                 :1;
+  size_t user_access               :1;
+  size_t write_through             :1;
+  size_t cache_disabled            :1;
+  size_t accessed                  :1;
+  size_t ignored_3                 :1;
+  size_t size                      :1;
+  size_t ignored_2                 :4;
+  size_t pfn                       :28;
+  size_t reserved_1                :12;
+  size_t ignored_1                 :11;
+  size_t execution_disabled        :1;
+} __attribute__((__packed__)) ptedit_pmd_t;
+
+typedef struct {
+  size_t present                   :1;
+  size_t writeable                 :1;
+  size_t user_access               :1;
+  size_t write_through             :1;
+  size_t cache_disabled            :1;
+  size_t accessed                  :1;
+  size_t dirty                     :1;
+  size_t size                      :1;
+  size_t global                    :1;
+  size_t ignored_2                 :3;
+  size_t pat                       :1;
+  size_t reserved_2                :8;
+  size_t pfn                  :19;
+  size_t reserved_1                :12;
+  size_t ignored_1                 :11;
+  size_t execution_disabled        :1;
+} __attribute__((__packed__)) ptedit_pmd_large_t;
+
+
+typedef struct {
+  size_t present                   :1;
+  size_t writeable                 :1;
+  size_t user_access               :1;
+  size_t write_through             :1;
+  size_t cache_disabled            :1;
+  size_t accessed                  :1;
+  size_t dirty                     :1;
+  size_t size                      :1;
+  size_t global                    :1;
+  size_t ignored_2                 :3;
+  size_t pfn                  :28;
+  size_t reserved_1                :12;
+  size_t ignored_1                 :11;
+  size_t execution_disabled        :1;
+} __attribute__((__packed__)) ptedit_pte_t;
+
+#elif defined(__aarch64__)
+#define PTEDIT_PAGE_PRESENT 3
+
+
+typedef struct {
+    size_t present                 :2;
+    size_t ignored_1               :10;
+    size_t table_address           :36;
+    size_t reserved                :4;
+    size_t ignored_2               :7;
+    size_t pxn_table               :1;
+    size_t xn_table                :1;
+    size_t ap_table                :2;
+    size_t ns_table                :1;
+}__attribute__((__packed__)) ptedit_pgd_t;
+
+typedef ptedit_pgd_t ptedit_p4d_t;
+typedef ptedit_pgd_t ptedit_pud_t;
+typedef ptedit_pgd_t ptedit_pmd_t;
+
+typedef struct {
+    size_t present                 :2;
+    size_t memory_attributes_index :3;
+    size_t non_secure              :1;
+    size_t access_permissions      :2;
+    size_t shareability_field      :2;
+    size_t access_flag             :1;
+    size_t not_global              :1;
+    size_t reserved_1              :18;
+    size_t pfn                     :18;
+    size_t reserved_2              :4;
+    size_t contiguous              :1;
+    size_t privileged_execute_never:1;
+    size_t execute_never           :1;
+    size_t ingored_1               :4;
+    size_t ignored_2               :5;
+}__attribute__((__packed__)) ptedit_pgd_large_t;
+
+typedef struct {
+    size_t present                 :2;
+    size_t memory_attributes_index :3;
+    size_t non_secure              :1;
+    size_t access_permissions      :2;
+    size_t shareability_field      :2;
+    size_t access_flag             :1;
+    size_t not_global              :1;
+    size_t reserved_1              :9;
+    size_t pfn                     :27;
+    size_t reserved_2              :4;
+    size_t contiguous              :1;
+    size_t privileged_execute_never:1;
+    size_t execute_never           :1;
+    size_t ingored_1               :4;
+    size_t ignored_2               :5;
+}__attribute__((__packed__)) ptedit_pmd_large_t;
+
+
+typedef struct {
+    size_t present                 :2;
+    size_t memory_attributes_index :3;
+    size_t non_secure              :1;
+    size_t access_permissions      :2;
+    size_t shareability_field      :2;
+    size_t access_flag             :1;
+    size_t not_global              :1;
+    size_t pfn                     :36;
+    size_t reserved_1              :4;
+    size_t contiguous              :1;
+    size_t privileged_execute_never:1;
+    size_t execute_never           :1;
+    size_t ingored_1               :4;
+    size_t ignored_2               :5;
+}__attribute__((__packed__)) ptedit_pte_t;
+#endif
+
+
+#define ptedit_cast(v, type) (*((type*)&(v)))
+
 /** @} */
 
 
@@ -692,11 +876,20 @@ void ptedit_print_entry_line(size_t entry, int line);
 #define PTEDIT_COLOR_GREEN   "\x1b[32m"
 #define PTEDIT_COLOR_RESET   "\x1b[0m"
 
-
 static int ptedit_fd;
 static int ptedit_umem;
 static int ptedit_pagesize;
 static size_t ptedit_paging_root;
+
+typedef struct {
+    int has_pgd, has_p4d, has_pud, has_pmd, has_pt;
+    int pgd_entries, p4d_entries, pud_entries, pmd_entries, pt_entries;
+    int page_offset;
+} ptedit_paging_definition_t;
+
+ptedit_paging_definition_t ptedit_paging_definition;
+
+
 
 // ---------------------------------------------------------------------------
 ptedit_entry_t ptedit_resolve_kernel(void* address, pid_t pid) {
@@ -709,19 +902,30 @@ ptedit_entry_t ptedit_resolve_kernel(void* address, pid_t pid) {
 
 // ---------------------------------------------------------------------------
 ptedit_entry_t ptedit_resolve_user(void* address, pid_t pid) {
-#if defined(__i386__) || defined(__x86_64__)
-    size_t pml4[ptedit_pagesize / sizeof(size_t)], pdpt[ptedit_pagesize / sizeof(size_t)],
-      pd[ptedit_pagesize / sizeof(size_t)], pt[ptedit_pagesize / sizeof(size_t)];
+    size_t pgd[ptedit_pagesize / sizeof(size_t)], p4d[ptedit_pagesize / sizeof(size_t)], 
+        pud[ptedit_pagesize / sizeof(size_t)], pmd[ptedit_pagesize / sizeof(size_t)], 
+        pt[ptedit_pagesize / sizeof(size_t)];
 
     size_t root = (pid == 0) ? ptedit_paging_root : ptedit_get_paging_root(pid);
-    ptedit_read_physical_page(root / ptedit_pagesize, (char *)pml4);
+    ptedit_read_physical_page(root / ptedit_pagesize, (char *)pgd);
 
-    int pml4i, pdpti, pdi, pti;
+    int pgdi, p4di, pudi, pmdi, pti;
     size_t addr = (size_t)address;
-    pml4i = (addr >> 39ull) & 511;
-    pdpti = (addr >> 30ull) & 511;
-    pdi = (addr >> 21ull) & 511;
-    pti = (addr >> 12ull) & 511;
+    pgdi = (addr >> (ptedit_paging_definition.page_offset 
+                    + ptedit_paging_definition.pt_entries 
+                    + ptedit_paging_definition.pmd_entries 
+                    + ptedit_paging_definition.pud_entries 
+                    + ptedit_paging_definition.p4d_entries)) % (1 << ptedit_paging_definition.pgd_entries);
+    p4di = (addr >> (ptedit_paging_definition.page_offset 
+                    + ptedit_paging_definition.pt_entries 
+                    + ptedit_paging_definition.pmd_entries 
+                    + ptedit_paging_definition.pud_entries)) % (1 << ptedit_paging_definition.p4d_entries);
+    pudi = (addr >> (ptedit_paging_definition.page_offset 
+                    + ptedit_paging_definition.pt_entries 
+                    + ptedit_paging_definition.pmd_entries)) % (1 << ptedit_paging_definition.pud_entries);
+    pmdi = (addr >> (ptedit_paging_definition.page_offset 
+                    + ptedit_paging_definition.pt_entries)) % (1 << ptedit_paging_definition.pmd_entries);
+    pti = (addr >> ptedit_paging_definition.page_offset) % (1 << ptedit_paging_definition.pt_entries);
     
     ptedit_entry_t resolved;
     memset(&resolved, 0, sizeof(resolved));
@@ -729,45 +933,65 @@ ptedit_entry_t ptedit_resolve_user(void* address, pid_t pid) {
     resolved.pid = (size_t)pid;
     resolved.valid = 0;
     
-    size_t pml4_entry = pml4[pml4i];
-    if(!(pml4_entry & (1ull << PTEDIT_PAGE_BIT_PRESENT))) {
+    size_t pgd_entry, p4d_entry, pud_entry, pmd_entry, pt_entry;
+    
+    pgd_entry = pgd[pgdi];
+    if(ptedit_cast(pgd_entry, ptedit_pgd_t).present != PTEDIT_PAGE_PRESENT) {
         return resolved;
     }
-    resolved.pml4 = pml4_entry;
-    resolved.valid |= PTEDIT_VALID_MASK_P4D;
-    resolved.pml5 = pml4_entry;
+    resolved.pgd = pgd_entry;
     resolved.valid |= PTEDIT_VALID_MASK_PGD;
-
-    ptedit_read_physical_page(ptedit_get_pfn(pml4_entry), (char *)pdpt);
-    size_t pdpt_entry = pdpt[pdpti];
-    if(!(pdpt_entry & (1ull << PTEDIT_PAGE_BIT_PRESENT))) {
-        return resolved;
+    if(ptedit_paging_definition.has_p4d) {    
+        ptedit_read_physical_page(ptedit_get_pfn(pgd_entry), (char *)p4d);
+        p4d_entry = p4d[p4di];
+        if(ptedit_cast(p4d_entry, ptedit_p4d_t).present != PTEDIT_PAGE_PRESENT) {
+            return resolved;
+        }
+    } else {
+        p4d_entry = pgd_entry;
     }
-    resolved.pdpt = pdpt_entry;
+    resolved.p4d = p4d_entry;
+    resolved.valid |= PTEDIT_VALID_MASK_P4D;
+
+    if(ptedit_paging_definition.has_pud) {
+        ptedit_read_physical_page(ptedit_get_pfn(p4d_entry), (char *)pud);
+        pud_entry = pud[pudi];
+        if(ptedit_cast(pud_entry, ptedit_pud_t).present != PTEDIT_PAGE_PRESENT) {
+            return resolved;
+        }
+    } else {
+        pud_entry = p4d_entry;
+    }
+    resolved.pud = pud_entry;
     resolved.valid |= PTEDIT_VALID_MASK_PUD;
     
-    ptedit_read_physical_page(ptedit_get_pfn(pdpt_entry), (char *)pd);
-    size_t pd_entry = pd[pdi];
-    if(!(pd_entry & (1ull << PTEDIT_PAGE_BIT_PRESENT))) {
-        return resolved;
+    if(ptedit_paging_definition.has_pmd) {
+        ptedit_read_physical_page(ptedit_get_pfn(pud_entry), (char *)pmd);
+        pmd_entry = pmd[pmdi];
+        if(ptedit_cast(pmd_entry, ptedit_pmd_t).present != PTEDIT_PAGE_PRESENT) {
+            return resolved;
+        }
+    } else {
+        pmd_entry = pud_entry;
     }
-    resolved.pd = pd_entry;
+    resolved.pmd = pmd_entry;
     resolved.valid |= PTEDIT_VALID_MASK_PMD;
     
-    if(!(pd_entry & (1ull << PTEDIT_PAGE_BIT_PSE))) {
+#if defined(__i386__) || defined(__x86_64__)
+    if(!ptedit_cast(pmd_entry, ptedit_pmd_t).size) {
+#endif
         // normal 4kb page
-        ptedit_read_physical_page(ptedit_get_pfn(pd_entry), (char *)pt);
-        size_t pt_entry = pt[pti];
-        if(!(pt_entry & (1ull << PTEDIT_PAGE_BIT_PRESENT))) {
+        ptedit_read_physical_page(ptedit_get_pfn(pmd_entry), (char *)pt);
+        pt_entry = pt[pti];
+        if(ptedit_cast(pt_entry, ptedit_pte_t).present != PTEDIT_PAGE_PRESENT) {
             return resolved;
         }
         resolved.pte = pt_entry;
         resolved.valid |= PTEDIT_VALID_MASK_PTE;
+#if defined(__i386__) || defined(__x86_64__)
     }
-    return resolved;
-#else
-    return ptedit_resolve_kernel(address, pid);
 #endif
+    return resolved;
 }
 
 // ---------------------------------------------------------------------------
@@ -779,65 +1003,110 @@ void ptedit_update_kernel(void* address, pid_t pid, ptedit_entry_t* vm) {
 
 // ---------------------------------------------------------------------------
 void ptedit_update_user(void* address, pid_t pid, ptedit_entry_t* vm) {
-#if defined(__i386__) || defined(__x86_64__)
-    size_t pml4[ptedit_pagesize / sizeof(size_t)], pdpt[ptedit_pagesize / sizeof(size_t)],
-      pd[ptedit_pagesize / sizeof(size_t)], pt[ptedit_pagesize / sizeof(size_t)];
+    size_t pgd[ptedit_pagesize / sizeof(size_t)], p4d[ptedit_pagesize / sizeof(size_t)], 
+        pud[ptedit_pagesize / sizeof(size_t)], pmd[ptedit_pagesize / sizeof(size_t)], 
+        pt[ptedit_pagesize / sizeof(size_t)];
 
     size_t root = (pid == 0) ? ptedit_paging_root : ptedit_get_paging_root(pid);
-    ptedit_read_physical_page(root / ptedit_pagesize, (char *)pml4);
+    ptedit_read_physical_page(root / ptedit_pagesize, (char *)pgd);
 
-    int pml4i, pdpti, pdi, pti;
+    int pgdi, p4di, pudi, pmdi, pti;
     size_t addr = (size_t)address;
-    pml4i = (addr >> 39ull) & 511;
-    pdpti = (addr >> 30ull) & 511;
-    pdi = (addr >> 21ull) & 511;
-    pti = (addr >> 12ull) & 511;
+    pgdi = (addr >> (ptedit_paging_definition.page_offset 
+                    + ptedit_paging_definition.pt_entries 
+                    + ptedit_paging_definition.pmd_entries 
+                    + ptedit_paging_definition.pud_entries 
+                    + ptedit_paging_definition.p4d_entries)) % (1 << ptedit_paging_definition.pgd_entries);
+    p4di = (addr >> (ptedit_paging_definition.page_offset 
+                    + ptedit_paging_definition.pt_entries 
+                    + ptedit_paging_definition.pmd_entries 
+                    + ptedit_paging_definition.pud_entries)) % (1 << ptedit_paging_definition.p4d_entries);
+    pudi = (addr >> (ptedit_paging_definition.page_offset 
+                    + ptedit_paging_definition.pt_entries 
+                    + ptedit_paging_definition.pmd_entries)) % (1 << ptedit_paging_definition.pud_entries);
+    pmdi = (addr >> (ptedit_paging_definition.page_offset 
+                    + ptedit_paging_definition.pt_entries)) % (1 << ptedit_paging_definition.pmd_entries);
+    pti = (addr >> ptedit_paging_definition.page_offset) % (1 << ptedit_paging_definition.pt_entries);
     
-    size_t pml4_entry = pml4[pml4i];
-    if(!(pml4_entry & (1ull << PTEDIT_PAGE_BIT_PRESENT))) {
-        return;
-    }
-    if(vm->valid & PTEDIT_VALID_MASK_P4D) pml4[pml4i] = vm->pml4;
-
-    int valid = PTEDIT_VALID_MASK_P4D;
+    size_t pgd_entry, p4d_entry, pud_entry, pmd_entry, pt_entry;
+    int valid = 0;
     
-    ptedit_read_physical_page(ptedit_get_pfn(pml4_entry), (char *)pdpt);
-    size_t pdpt_entry = pdpt[pdpti];
-    if(!(pdpt_entry & (1ull << PTEDIT_PAGE_BIT_PRESENT))) {
+    pgd_entry = pgd[pgdi];
+    if(vm->valid & PTEDIT_VALID_MASK_PGD) pgd[pgdi] = vm->pgd;
+    if(ptedit_cast(pgd_entry, ptedit_pgd_t).present != PTEDIT_PAGE_PRESENT) {
         goto update;
+    }
+    valid |= PTEDIT_VALID_MASK_PGD;
+    
+    if(ptedit_paging_definition.has_p4d) {    
+        ptedit_read_physical_page(ptedit_get_pfn(pgd_entry), (char *)p4d);
+        p4d_entry = p4d[p4di];
+        if(vm->valid & PTEDIT_VALID_MASK_P4D) p4d[p4di] = vm->p4d;
+        if(ptedit_cast(p4d_entry, ptedit_p4d_t).present != PTEDIT_PAGE_PRESENT) {
+            goto update;
+        }
+    } else {
+        p4d_entry = pgd_entry;
+    }
+    valid |= PTEDIT_VALID_MASK_P4D;
+
+    if(ptedit_paging_definition.has_pud) {
+        ptedit_read_physical_page(ptedit_get_pfn(p4d_entry), (char *)pud);
+        pud_entry = pud[pudi];
+        if(vm->valid & PTEDIT_VALID_MASK_PUD) pud[pudi] = vm->pud;
+        if(ptedit_cast(pud_entry, ptedit_pud_t).present != PTEDIT_PAGE_PRESENT) {
+            goto update;
+        }
+    } else {
+        pud_entry = p4d_entry;
     }
     valid |= PTEDIT_VALID_MASK_PUD;
-    if(vm->valid & PTEDIT_VALID_MASK_PUD) pdpt[pdpti] = vm->pdpt;
     
-    ptedit_read_physical_page(ptedit_get_pfn(pdpt_entry), (char *)pd);
-    size_t pd_entry = pd[pdi];
-    if(!(pd_entry & (1ull << PTEDIT_PAGE_BIT_PRESENT))) {
-        goto update;
+    if(ptedit_paging_definition.has_pmd) {
+        ptedit_read_physical_page(ptedit_get_pfn(pud_entry), (char *)pmd);
+        pmd_entry = pmd[pmdi];
+        if(vm->valid & PTEDIT_VALID_MASK_PMD) pmd[pmdi] = vm->pmd;
+        if(ptedit_cast(pmd_entry, ptedit_pmd_t).present != PTEDIT_PAGE_PRESENT) {
+            goto update;
+        }
+    } else {
+        pmd_entry = pud_entry;
     }
     valid |= PTEDIT_VALID_MASK_PMD;
-    if(vm->valid & PTEDIT_VALID_MASK_PMD) pd[pdi] = vm->pd;
     
-    if(!(pd_entry & (1ull << PTEDIT_PAGE_BIT_PSE))) {
+#if defined(__i386__) || defined(__x86_64__)
+    if(!ptedit_cast(pmd_entry, ptedit_pmd_t).size) {
+#endif
         // normal 4kb page
-        ptedit_read_physical_page(ptedit_get_pfn(pd_entry), (char *)pt);
-        size_t pt_entry = pt[pti];
-        if(!(pt_entry & (1ull << PTEDIT_PAGE_BIT_PRESENT))) {
+        ptedit_read_physical_page(ptedit_get_pfn(pmd_entry), (char *)pt);
+        pt_entry = pt[pti];
+        if(vm->valid & PTEDIT_VALID_MASK_PTE) pt[pti] = vm->pte;
+        if(ptedit_cast(pt_entry, ptedit_pte_t).present != PTEDIT_PAGE_PRESENT) {
             goto update;
         }
         valid |= PTEDIT_VALID_MASK_PTE;
-        if(vm->valid & PTEDIT_VALID_MASK_PTE) pt[pti] = vm->pte;
+#if defined(__i386__) || defined(__x86_64__)
     }
+#endif
     
     update:
-    if((vm->valid & PTEDIT_VALID_MASK_PTE) && (valid & PTEDIT_VALID_MASK_PTE)) ptedit_write_physical_page(ptedit_get_pfn(pd_entry), (char*)pt);
-    if((vm->valid & PTEDIT_VALID_MASK_PMD) && (valid & PTEDIT_VALID_MASK_PMD)) ptedit_write_physical_page(ptedit_get_pfn(pdpt_entry), (char*)pd);
-    if((vm->valid & PTEDIT_VALID_MASK_PUD) && (valid & PTEDIT_VALID_MASK_PUD)) ptedit_write_physical_page(ptedit_get_pfn(pml4_entry), (char*)pdpt);
-    if((vm->valid & PTEDIT_VALID_MASK_PGD) && (valid & PTEDIT_VALID_MASK_PGD)) ptedit_write_physical_page(root / ptedit_pagesize, (char*)pml4);
+    if((vm->valid & PTEDIT_VALID_MASK_PTE) && (valid & PTEDIT_VALID_MASK_PTE)) {
+        ptedit_write_physical_page(ptedit_get_pfn(pmd_entry), (char*)pt);
+    }
+    if((vm->valid & PTEDIT_VALID_MASK_PMD) && (valid & PTEDIT_VALID_MASK_PMD) && ptedit_paging_definition.has_pmd) {
+        ptedit_write_physical_page(ptedit_get_pfn(pud_entry), (char*)pmd);
+    }
+    if((vm->valid & PTEDIT_VALID_MASK_PUD) && (valid & PTEDIT_VALID_MASK_PUD) && ptedit_paging_definition.has_pud) {
+        ptedit_write_physical_page(ptedit_get_pfn(p4d_entry), (char*)pud);
+    }
+    if((vm->valid & PTEDIT_VALID_MASK_P4D) && (valid & PTEDIT_VALID_MASK_P4D) && ptedit_paging_definition.has_p4d) {
+        ptedit_write_physical_page(ptedit_get_pfn(pgd_entry), (char*)p4d);
+    }
+    if((vm->valid & PTEDIT_VALID_MASK_PGD) && (valid & PTEDIT_VALID_MASK_PGD) && ptedit_paging_definition.has_pgd) {
+        ptedit_write_physical_page(root / ptedit_pagesize, (char*)pgd);
+    }
     
     ptedit_invalidate_tlb(address);
-#else
-    ptedit_update_kernel(address, pid, vm);
-#endif
 }
 
 // ---------------------------------------------------------------------------
@@ -974,6 +1243,31 @@ int ptedit_init() {
       ptedit_use_implementation(PTEDIT_IMPL_KERNEL);
   }
   ptedit_pagesize = getpagesize();
+#if defined(__i386__) || defined(__x86_64__)
+    ptedit_paging_definition.has_pgd = 1;
+    ptedit_paging_definition.has_p4d = 0;
+    ptedit_paging_definition.has_pud = 1;
+    ptedit_paging_definition.has_pmd = 1;
+    ptedit_paging_definition.has_pt = 1;
+    ptedit_paging_definition.pgd_entries = 9;
+    ptedit_paging_definition.p4d_entries = 0;
+    ptedit_paging_definition.pud_entries = 9;
+    ptedit_paging_definition.pmd_entries = 9;
+    ptedit_paging_definition.pt_entries = 9;
+    ptedit_paging_definition.page_offset = 12;
+    #elif defined(__aarch64__)
+    ptedit_paging_definition.has_pgd = 1;
+    ptedit_paging_definition.has_p4d = 0;
+    ptedit_paging_definition.has_pud = 0;
+    ptedit_paging_definition.has_pmd = 1;
+    ptedit_paging_definition.has_pt = 1;
+    ptedit_paging_definition.pgd_entries = 9;
+    ptedit_paging_definition.p4d_entries = 0;
+    ptedit_paging_definition.pud_entries = 0;
+    ptedit_paging_definition.pmd_entries = 9;
+    ptedit_paging_definition.pt_entries = 9;
+    ptedit_paging_definition.page_offset = 12;
+#endif
   return 0;
 }
 

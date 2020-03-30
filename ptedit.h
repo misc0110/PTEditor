@@ -284,6 +284,190 @@ size_t ptedit_pte_get_pfn(void* address, pid_t pid);
  */
 void ptedit_pte_set_pfn(void* address, pid_t pid, size_t pfn);
 
+
+#if defined(__i386__) || defined(__x86_64__)
+#define PTEDIT_PAGE_PRESENT 1
+
+typedef struct {
+  size_t present                   :1;
+  size_t writeable                 :1;
+  size_t user_access               :1;
+  size_t write_through             :1;
+  size_t cache_disabled            :1;
+  size_t accessed                  :1;
+  size_t ignored_3                 :1;
+  size_t size                      :1;
+  size_t ignored_2                 :4;
+  size_t pfn                       :28;
+  size_t reserved_1                :12;
+  size_t ignored_1                 :11;
+  size_t execution_disabled        :1;
+} __attribute__((__packed__)) ptedit_pgd_t;
+
+typedef struct {
+  size_t present                   :1;
+  size_t writeable                 :1;
+  size_t user_access               :1;
+  size_t write_through             :1;
+  size_t cache_disabled            :1;
+  size_t accessed                  :1;
+  size_t ignored_3                 :1;
+  size_t size                      :1;
+  size_t ignored_2                 :4;
+  size_t pfn                       :28;
+  size_t reserved_1                :12;
+  size_t ignored_1                 :11;
+  size_t execution_disabled        :1;
+} __attribute__((__packed__)) ptedit_p4d_t;
+
+typedef struct {
+  size_t present                   :1;
+  size_t writeable                 :1;
+  size_t user_access               :1;
+  size_t write_through             :1;
+  size_t cache_disabled            :1;
+  size_t accessed                  :1;
+  size_t ignored_3                 :1;
+  size_t size                      :1;
+  size_t ignored_2                 :4;
+  size_t pfn                       :28;
+  size_t reserved_1                :12;
+  size_t ignored_1                 :11;
+  size_t execution_disabled        :1;
+} __attribute__((__packed__)) ptedit_pud_t;
+
+
+typedef struct {
+  size_t present                   :1;
+  size_t writeable                 :1;
+  size_t user_access               :1;
+  size_t write_through             :1;
+  size_t cache_disabled            :1;
+  size_t accessed                  :1;
+  size_t ignored_3                 :1;
+  size_t size                      :1;
+  size_t ignored_2                 :4;
+  size_t pfn                       :28;
+  size_t reserved_1                :12;
+  size_t ignored_1                 :11;
+  size_t execution_disabled        :1;
+} __attribute__((__packed__)) ptedit_pmd_t;
+
+typedef struct {
+  size_t present                   :1;
+  size_t writeable                 :1;
+  size_t user_access               :1;
+  size_t write_through             :1;
+  size_t cache_disabled            :1;
+  size_t accessed                  :1;
+  size_t dirty                     :1;
+  size_t size                      :1;
+  size_t global                    :1;
+  size_t ignored_2                 :3;
+  size_t pat                       :1;
+  size_t reserved_2                :8;
+  size_t pfn                  :19;
+  size_t reserved_1                :12;
+  size_t ignored_1                 :11;
+  size_t execution_disabled        :1;
+} __attribute__((__packed__)) ptedit_pmd_large_t;
+
+
+typedef struct {
+  size_t present                   :1;
+  size_t writeable                 :1;
+  size_t user_access               :1;
+  size_t write_through             :1;
+  size_t cache_disabled            :1;
+  size_t accessed                  :1;
+  size_t dirty                     :1;
+  size_t size                      :1;
+  size_t global                    :1;
+  size_t ignored_2                 :3;
+  size_t pfn                  :28;
+  size_t reserved_1                :12;
+  size_t ignored_1                 :11;
+  size_t execution_disabled        :1;
+} __attribute__((__packed__)) ptedit_pte_t;
+
+#elif defined(__aarch64__)
+#define PTEDIT_PAGE_PRESENT 3
+
+
+typedef struct {
+    size_t present                 :2;
+    size_t ignored_1               :10;
+    size_t table_address           :36;
+    size_t reserved                :4;
+    size_t ignored_2               :7;
+    size_t pxn_table               :1;
+    size_t xn_table                :1;
+    size_t ap_table                :2;
+    size_t ns_table                :1;
+}__attribute__((__packed__)) ptedit_pgd_t;
+
+typedef ptedit_pgd_t ptedit_p4d_t;
+typedef ptedit_pgd_t ptedit_pud_t;
+typedef ptedit_pgd_t ptedit_pmd_t;
+
+typedef struct {
+    size_t present                 :2;
+    size_t memory_attributes_index :3;
+    size_t non_secure              :1;
+    size_t access_permissions      :2;
+    size_t shareability_field      :2;
+    size_t access_flag             :1;
+    size_t not_global              :1;
+    size_t reserved_1              :18;
+    size_t pfn                     :18;
+    size_t reserved_2              :4;
+    size_t contiguous              :1;
+    size_t privileged_execute_never:1;
+    size_t execute_never           :1;
+    size_t ingored_1               :4;
+    size_t ignored_2               :5;
+}__attribute__((__packed__)) ptedit_pgd_large_t;
+
+typedef struct {
+    size_t present                 :2;
+    size_t memory_attributes_index :3;
+    size_t non_secure              :1;
+    size_t access_permissions      :2;
+    size_t shareability_field      :2;
+    size_t access_flag             :1;
+    size_t not_global              :1;
+    size_t reserved_1              :9;
+    size_t pfn                     :27;
+    size_t reserved_2              :4;
+    size_t contiguous              :1;
+    size_t privileged_execute_never:1;
+    size_t execute_never           :1;
+    size_t ingored_1               :4;
+    size_t ignored_2               :5;
+}__attribute__((__packed__)) ptedit_pmd_large_t;
+
+
+typedef struct {
+    size_t present                 :2;
+    size_t memory_attributes_index :3;
+    size_t non_secure              :1;
+    size_t access_permissions      :2;
+    size_t shareability_field      :2;
+    size_t access_flag             :1;
+    size_t not_global              :1;
+    size_t pfn                     :36;
+    size_t reserved_1              :4;
+    size_t contiguous              :1;
+    size_t privileged_execute_never:1;
+    size_t execute_never           :1;
+    size_t ingored_1               :4;
+    size_t ignored_2               :5;
+}__attribute__((__packed__)) ptedit_pte_t;
+#endif
+
+
+#define ptedit_cast(v, type) (*((type*)&(v)))
+
 /** @} */
 
 
