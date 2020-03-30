@@ -194,62 +194,60 @@ void ptedit_update_user(void* address, pid_t pid, ptedit_entry_t* vm) {
                     + ptedit_paging_definition.pt_entries)) % (1 << ptedit_paging_definition.pmd_entries);
     pti = (addr >> ptedit_paging_definition.page_offset) % (1 << ptedit_paging_definition.pt_entries);
     
-    size_t pgd_entry, p4d_entry, pud_entry, pmd_entry, pt_entry;
+    size_t pgd_entry, p4d_entry, pud_entry, pmd_entry;
     int valid = 0;
     
     pgd_entry = pgd[pgdi];
     if(vm->valid & PTEDIT_VALID_MASK_PGD) pgd[pgdi] = vm->pgd;
+    valid |= PTEDIT_VALID_MASK_PGD;
     if(ptedit_cast(pgd_entry, ptedit_pgd_t).present != PTEDIT_PAGE_PRESENT) {
         goto update;
     }
-    valid |= PTEDIT_VALID_MASK_PGD;
     
     if(ptedit_paging_definition.has_p4d) {    
         ptedit_read_physical_page(ptedit_get_pfn(pgd_entry), (char *)p4d);
         p4d_entry = p4d[p4di];
         if(vm->valid & PTEDIT_VALID_MASK_P4D) p4d[p4di] = vm->p4d;
-        if(ptedit_cast(p4d_entry, ptedit_p4d_t).present != PTEDIT_PAGE_PRESENT) {
-            goto update;
-        }
+        valid |= PTEDIT_VALID_MASK_P4D;
     } else {
         p4d_entry = pgd_entry;
     }
-    valid |= PTEDIT_VALID_MASK_P4D;
+    
+    if(ptedit_cast(p4d_entry, ptedit_p4d_t).present != PTEDIT_PAGE_PRESENT) {
+        goto update;
+    }
 
     if(ptedit_paging_definition.has_pud) {
         ptedit_read_physical_page(ptedit_get_pfn(p4d_entry), (char *)pud);
         pud_entry = pud[pudi];
         if(vm->valid & PTEDIT_VALID_MASK_PUD) pud[pudi] = vm->pud;
-        if(ptedit_cast(pud_entry, ptedit_pud_t).present != PTEDIT_PAGE_PRESENT) {
-            goto update;
-        }
+        valid |= PTEDIT_VALID_MASK_PUD;
     } else {
         pud_entry = p4d_entry;
     }
-    valid |= PTEDIT_VALID_MASK_PUD;
+    if(ptedit_cast(pud_entry, ptedit_pud_t).present != PTEDIT_PAGE_PRESENT) {
+        goto update;
+    }
     
     if(ptedit_paging_definition.has_pmd) {
         ptedit_read_physical_page(ptedit_get_pfn(pud_entry), (char *)pmd);
         pmd_entry = pmd[pmdi];
         if(vm->valid & PTEDIT_VALID_MASK_PMD) pmd[pmdi] = vm->pmd;
-        if(ptedit_cast(pmd_entry, ptedit_pmd_t).present != PTEDIT_PAGE_PRESENT) {
-            goto update;
-        }
+        valid |= PTEDIT_VALID_MASK_PMD;
     } else {
         pmd_entry = pud_entry;
     }
-    valid |= PTEDIT_VALID_MASK_PMD;
+    if(ptedit_cast(pmd_entry, ptedit_pmd_t).present != PTEDIT_PAGE_PRESENT) {
+        goto update;
+    }
     
 #if defined(__i386__) || defined(__x86_64__)
     if(!ptedit_cast(pmd_entry, ptedit_pmd_t).size) {
 #endif
         // normal 4kb page
         ptedit_read_physical_page(ptedit_get_pfn(pmd_entry), (char *)pt);
-        pt_entry = pt[pti];
+//         pt_entry = pt[pti];
         if(vm->valid & PTEDIT_VALID_MASK_PTE) pt[pti] = vm->pte;
-        if(ptedit_cast(pt_entry, ptedit_pte_t).present != PTEDIT_PAGE_PRESENT) {
-            goto update;
-        }
         valid |= PTEDIT_VALID_MASK_PTE;
 #if defined(__i386__) || defined(__x86_64__)
     }
@@ -273,6 +271,13 @@ void ptedit_update_user(void* address, pid_t pid, ptedit_entry_t* vm) {
     }
     
     ptedit_invalidate_tlb(address);
+}
+
+
+// ---------------------------------------------------------------------------
+void* ptedit_pmap(size_t physical, size_t length) {
+    char* m = mmap(0, length + (physical % ptedit_pagesize), PROT_READ | PROT_WRITE, MAP_SHARED, ptedit_umem, ((size_t)(physical / ptedit_pagesize)) * ptedit_pagesize);
+    return m + (physical % ptedit_pagesize);
 }
 
 // ---------------------------------------------------------------------------

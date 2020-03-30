@@ -133,9 +133,9 @@ typedef struct {
 
 /** Use the kernel to resolve and update paging structures */
 #define PTEDIT_IMPL_KERNEL       0
-/** Use the user-space implemenation to resolve and update paging structures */
+/** Use the user-space implemenation to resolve and update paging structures, using pread to read from the memory mapping */
 #define PTEDIT_IMPL_USER_PREAD   1
-/** Use the user-space implemenation that maps the phyiscal memory into user space to resolve and update paging structures */
+/** Use the user-space implemenation that maps the physical memory into user space to resolve and update paging structures */
 #define PTEDIT_IMPL_USER         2
 
 /**
@@ -304,7 +304,7 @@ void ptedit_cleanup();
 /**
  * Switch between kernel and user-space implementation
  * 
- * @param[in] implementation The implementation to use, either PTEDIT_IMPL_KERNEL or PTEDIT_IMPL_USER
+ * @param[in] implementation The implementation to use, either PTEDIT_IMPL_KERNEL, PTEDIT_IMPL_USER, or PTEDIT_IMPL_USER_PREAD
  * 
  */
 void ptedit_use_implementation(int implementation);
@@ -335,7 +335,6 @@ typedef void (*ptedit_update_t)(void*, pid_t, ptedit_entry_t*);
  * @return A structure containing the page-table entries of all levels.
  */
 ptedit_resolve_t ptedit_resolve;
-// ptedit_entry_t ptedit_resolve(void* address, pid_t pid);
 
 /**
  * Updates one or more page-table entries for a virtual address of a given process.
@@ -347,8 +346,6 @@ ptedit_resolve_t ptedit_resolve;
  *
  */
 ptedit_update_t ptedit_update;
-
-// void ptedit_update(void* address, pid_t pid, ptedit_entry_t* vm);
 
 /**
  * Sets a bit directly in the PTE of an address.
@@ -407,6 +404,9 @@ void ptedit_pte_set_pfn(void* address, pid_t pid, size_t pfn);
 #if defined(__i386__) || defined(__x86_64__)
 #define PTEDIT_PAGE_PRESENT 1
 
+/**
+ * Struct to access the fields of the PGD
+ */
 typedef struct {
   size_t present                   :1;
   size_t writeable                 :1;
@@ -423,55 +423,28 @@ typedef struct {
   size_t execution_disabled        :1;
 } __attribute__((__packed__)) ptedit_pgd_t;
 
-typedef struct {
-  size_t present                   :1;
-  size_t writeable                 :1;
-  size_t user_access               :1;
-  size_t write_through             :1;
-  size_t cache_disabled            :1;
-  size_t accessed                  :1;
-  size_t ignored_3                 :1;
-  size_t size                      :1;
-  size_t ignored_2                 :4;
-  size_t pfn                       :28;
-  size_t reserved_1                :12;
-  size_t ignored_1                 :11;
-  size_t execution_disabled        :1;
-} __attribute__((__packed__)) ptedit_p4d_t;
 
-typedef struct {
-  size_t present                   :1;
-  size_t writeable                 :1;
-  size_t user_access               :1;
-  size_t write_through             :1;
-  size_t cache_disabled            :1;
-  size_t accessed                  :1;
-  size_t ignored_3                 :1;
-  size_t size                      :1;
-  size_t ignored_2                 :4;
-  size_t pfn                       :28;
-  size_t reserved_1                :12;
-  size_t ignored_1                 :11;
-  size_t execution_disabled        :1;
-} __attribute__((__packed__)) ptedit_pud_t;
+/**
+ * Struct to access the fields of the P4D
+ */
+typedef ptedit_pgd_t ptedit_p4d_t;
 
 
-typedef struct {
-  size_t present                   :1;
-  size_t writeable                 :1;
-  size_t user_access               :1;
-  size_t write_through             :1;
-  size_t cache_disabled            :1;
-  size_t accessed                  :1;
-  size_t ignored_3                 :1;
-  size_t size                      :1;
-  size_t ignored_2                 :4;
-  size_t pfn                       :28;
-  size_t reserved_1                :12;
-  size_t ignored_1                 :11;
-  size_t execution_disabled        :1;
-} __attribute__((__packed__)) ptedit_pmd_t;
+/**
+ * Struct to access the fields of the PUD
+ */
+typedef ptedit_pgd_t ptedit_pud_t;
 
+
+/**
+ * Struct to access the fields of the PMD
+ */
+typedef ptedit_pgd_t ptedit_pmd_t;
+
+
+/**
+ * Struct to access the fields of the PMD when mapping a  large page (2MB)
+ */
 typedef struct {
   size_t present                   :1;
   size_t writeable                 :1;
@@ -485,13 +458,16 @@ typedef struct {
   size_t ignored_2                 :3;
   size_t pat                       :1;
   size_t reserved_2                :8;
-  size_t pfn                  :19;
+  size_t pfn                       :19;
   size_t reserved_1                :12;
   size_t ignored_1                 :11;
   size_t execution_disabled        :1;
 } __attribute__((__packed__)) ptedit_pmd_large_t;
 
 
+/**
+ * Struct to access the fields of the PTE
+ */
 typedef struct {
   size_t present                   :1;
   size_t writeable                 :1;
@@ -503,7 +479,7 @@ typedef struct {
   size_t size                      :1;
   size_t global                    :1;
   size_t ignored_2                 :3;
-  size_t pfn                  :28;
+  size_t pfn                       :28;
   size_t reserved_1                :12;
   size_t ignored_1                 :11;
   size_t execution_disabled        :1;
@@ -513,6 +489,9 @@ typedef struct {
 #define PTEDIT_PAGE_PRESENT 3
 
 
+/**
+ * Struct to access the fields of the PGD
+ */
 typedef struct {
     size_t present                 :2;
     size_t ignored_1               :10;
@@ -525,10 +504,28 @@ typedef struct {
     size_t ns_table                :1;
 }__attribute__((__packed__)) ptedit_pgd_t;
 
+
+/**
+ * Struct to access the fields of the P4D
+ */
 typedef ptedit_pgd_t ptedit_p4d_t;
+
+
+/**
+ * Struct to access the fields of the PUD
+ */
 typedef ptedit_pgd_t ptedit_pud_t;
+
+
+/**
+ * Struct to access the fields of the PMD
+ */
 typedef ptedit_pgd_t ptedit_pmd_t;
 
+
+/**
+ * Struct to access the fields of the PGD when mapping a large page
+ */
 typedef struct {
     size_t present                 :2;
     size_t memory_attributes_index :3;
@@ -547,6 +544,10 @@ typedef struct {
     size_t ignored_2               :5;
 }__attribute__((__packed__)) ptedit_pgd_large_t;
 
+
+/**
+ * Struct to access the fields of the PMD when mapping a large page
+ */
 typedef struct {
     size_t present                 :2;
     size_t memory_attributes_index :3;
@@ -566,6 +567,9 @@ typedef struct {
 }__attribute__((__packed__)) ptedit_pmd_large_t;
 
 
+/**
+ * Struct to access the fields of the PTE
+ */
 typedef struct {
     size_t present                 :2;
     size_t memory_attributes_index :3;
@@ -584,7 +588,14 @@ typedef struct {
 }__attribute__((__packed__)) ptedit_pte_t;
 #endif
 
-
+/**
+ * Casts a paging structure entry (e.g., page table) to a structure with easy access to its fields
+ * 
+ * @param[in] v Entry to Cast
+ * @param[in] type Data type of struct to cast to, e.g., ptedit_pte_t
+ * 
+ * @return Struct of type "type" with easily accessible fields
+ */
 #define ptedit_cast(v, type) (*((type*)(&(v))))
 
 /** @} */
@@ -667,6 +678,16 @@ void ptedit_read_physical_page(size_t pfn, char* buffer);
  *
  */
 void ptedit_write_physical_page(size_t pfn, char* content);
+
+/**
+ * Map a physical address range.
+ * 
+ * @param[in] physical The physical address to map
+ * @param[in] length The length of the physical memory range to map
+ * 
+ * @return A virtual address that can be used to access the physical range
+ */
+void* ptedit_pmap(size_t physical, size_t length);
 
 /** @} */
 
@@ -1061,62 +1082,60 @@ void ptedit_update_user(void* address, pid_t pid, ptedit_entry_t* vm) {
                     + ptedit_paging_definition.pt_entries)) % (1 << ptedit_paging_definition.pmd_entries);
     pti = (addr >> ptedit_paging_definition.page_offset) % (1 << ptedit_paging_definition.pt_entries);
     
-    size_t pgd_entry, p4d_entry, pud_entry, pmd_entry, pt_entry;
+    size_t pgd_entry, p4d_entry, pud_entry, pmd_entry;
     int valid = 0;
     
     pgd_entry = pgd[pgdi];
     if(vm->valid & PTEDIT_VALID_MASK_PGD) pgd[pgdi] = vm->pgd;
+    valid |= PTEDIT_VALID_MASK_PGD;
     if(ptedit_cast(pgd_entry, ptedit_pgd_t).present != PTEDIT_PAGE_PRESENT) {
         goto update;
     }
-    valid |= PTEDIT_VALID_MASK_PGD;
     
     if(ptedit_paging_definition.has_p4d) {    
         ptedit_read_physical_page(ptedit_get_pfn(pgd_entry), (char *)p4d);
         p4d_entry = p4d[p4di];
         if(vm->valid & PTEDIT_VALID_MASK_P4D) p4d[p4di] = vm->p4d;
-        if(ptedit_cast(p4d_entry, ptedit_p4d_t).present != PTEDIT_PAGE_PRESENT) {
-            goto update;
-        }
+        valid |= PTEDIT_VALID_MASK_P4D;
     } else {
         p4d_entry = pgd_entry;
     }
-    valid |= PTEDIT_VALID_MASK_P4D;
+    
+    if(ptedit_cast(p4d_entry, ptedit_p4d_t).present != PTEDIT_PAGE_PRESENT) {
+        goto update;
+    }
 
     if(ptedit_paging_definition.has_pud) {
         ptedit_read_physical_page(ptedit_get_pfn(p4d_entry), (char *)pud);
         pud_entry = pud[pudi];
         if(vm->valid & PTEDIT_VALID_MASK_PUD) pud[pudi] = vm->pud;
-        if(ptedit_cast(pud_entry, ptedit_pud_t).present != PTEDIT_PAGE_PRESENT) {
-            goto update;
-        }
+        valid |= PTEDIT_VALID_MASK_PUD;
     } else {
         pud_entry = p4d_entry;
     }
-    valid |= PTEDIT_VALID_MASK_PUD;
+    if(ptedit_cast(pud_entry, ptedit_pud_t).present != PTEDIT_PAGE_PRESENT) {
+        goto update;
+    }
     
     if(ptedit_paging_definition.has_pmd) {
         ptedit_read_physical_page(ptedit_get_pfn(pud_entry), (char *)pmd);
         pmd_entry = pmd[pmdi];
         if(vm->valid & PTEDIT_VALID_MASK_PMD) pmd[pmdi] = vm->pmd;
-        if(ptedit_cast(pmd_entry, ptedit_pmd_t).present != PTEDIT_PAGE_PRESENT) {
-            goto update;
-        }
+        valid |= PTEDIT_VALID_MASK_PMD;
     } else {
         pmd_entry = pud_entry;
     }
-    valid |= PTEDIT_VALID_MASK_PMD;
+    if(ptedit_cast(pmd_entry, ptedit_pmd_t).present != PTEDIT_PAGE_PRESENT) {
+        goto update;
+    }
     
 #if defined(__i386__) || defined(__x86_64__)
     if(!ptedit_cast(pmd_entry, ptedit_pmd_t).size) {
 #endif
         // normal 4kb page
         ptedit_read_physical_page(ptedit_get_pfn(pmd_entry), (char *)pt);
-        pt_entry = pt[pti];
+//         pt_entry = pt[pti];
         if(vm->valid & PTEDIT_VALID_MASK_PTE) pt[pti] = vm->pte;
-        if(ptedit_cast(pt_entry, ptedit_pte_t).present != PTEDIT_PAGE_PRESENT) {
-            goto update;
-        }
         valid |= PTEDIT_VALID_MASK_PTE;
 #if defined(__i386__) || defined(__x86_64__)
     }
@@ -1140,6 +1159,13 @@ void ptedit_update_user(void* address, pid_t pid, ptedit_entry_t* vm) {
     }
     
     ptedit_invalidate_tlb(address);
+}
+
+
+// ---------------------------------------------------------------------------
+void* ptedit_pmap(size_t physical, size_t length) {
+    char* m = mmap(0, length + (physical % ptedit_pagesize), PROT_READ | PROT_WRITE, MAP_SHARED, ptedit_umem, ((size_t)(physical / ptedit_pagesize)) * ptedit_pagesize);
+    return m + (physical % ptedit_pagesize);
 }
 
 // ---------------------------------------------------------------------------

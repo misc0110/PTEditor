@@ -1,22 +1,9 @@
-all: memmap nx map_pt uncachable virt2phys performance
+SRC=$(wildcard *.c)
+BIN=$(SRC:.c=)
 
-memmap: memmap.c
-	gcc memmap.c -o memmap
+all: $(BIN)
+% : %.c
+	gcc $< -o $@
 	
-performance: performance.c
-	gcc performance.c -o performance
-	
-nx: nx.c
-	gcc nx.c -o nx
-
-map_pt: map_pt.c
-	gcc map_pt.c -o map_pt
-	
-uncachable: uncachable.c
-	gcc uncachable.c -o uncachable
-	
-virt2phys: virt2phys.c
-	gcc virt2phys.c -o virt2phys
-
 clean:
-	rm -f memmap nx map_pt uncachable virt2phys
+	rm -f $(BIN) *.o
