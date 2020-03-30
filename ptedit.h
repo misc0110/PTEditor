@@ -15,9 +15,11 @@
  */
 
 /** Use the kernel to resolve and update paging structures */
-#define PTEDIT_IMPL_KERNEL 0
+#define PTEDIT_IMPL_KERNEL       0
 /** Use the user-space implemenation to resolve and update paging structures */
-#define PTEDIT_IMPL_USER   1
+#define PTEDIT_IMPL_USER_PREAD   1
+/** Use the user-space implemenation that maps the phyiscal memory into user space to resolve and update paging structures */
+#define PTEDIT_IMPL_USER         2
 
 /**
  * The bits in a page-table entry
@@ -466,7 +468,7 @@ typedef struct {
 #endif
 
 
-#define ptedit_cast(v, type) (*((type*)&(v)))
+#define ptedit_cast(v, type) (*((type*)(&(v))))
 
 /** @} */
 

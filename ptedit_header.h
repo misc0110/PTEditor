@@ -132,9 +132,11 @@ typedef struct {
  */
 
 /** Use the kernel to resolve and update paging structures */
-#define PTEDIT_IMPL_KERNEL 0
+#define PTEDIT_IMPL_KERNEL       0
 /** Use the user-space implemenation to resolve and update paging structures */
-#define PTEDIT_IMPL_USER   1
+#define PTEDIT_IMPL_USER_PREAD   1
+/** Use the user-space implemenation that maps the phyiscal memory into user space to resolve and update paging structures */
+#define PTEDIT_IMPL_USER         2
 
 /**
  * The bits in a page-table entry
@@ -583,7 +585,7 @@ typedef struct {
 #endif
 
 
-#define ptedit_cast(v, type) (*((type*)&(v)))
+#define ptedit_cast(v, type) (*((type*)(&(v))))
 
 /** @} */
 
@@ -869,6 +871,7 @@ void ptedit_print_entry_line(size_t entry, int line);
 #include <sys/ioctl.h>
 #include <unistd.h>
 #include <string.h>
+#include <sys/mman.h>
 
 
 
@@ -880,6 +883,7 @@ static int ptedit_fd;
 static int ptedit_umem;
 static int ptedit_pagesize;
 static size_t ptedit_paging_root;
+static unsigned char* ptedit_vmem;
 
 typedef struct {
     int has_pgd, has_p4d, has_pud, has_pmd, has_pt;
@@ -901,13 +905,24 @@ ptedit_entry_t ptedit_resolve_kernel(void* address, pid_t pid) {
 }
 
 // ---------------------------------------------------------------------------
-ptedit_entry_t ptedit_resolve_user(void* address, pid_t pid) {
-    size_t pgd[ptedit_pagesize / sizeof(size_t)], p4d[ptedit_pagesize / sizeof(size_t)], 
-        pud[ptedit_pagesize / sizeof(size_t)], pmd[ptedit_pagesize / sizeof(size_t)], 
-        pt[ptedit_pagesize / sizeof(size_t)];
+typedef size_t (*ptedit_phys_read_t)(size_t);
 
+// ---------------------------------------------------------------------------
+static inline size_t ptedit_phys_read_map(size_t address) {
+    return *(size_t*)(ptedit_vmem + address);
+}
+
+// ---------------------------------------------------------------------------
+static inline size_t ptedit_phys_read_pread(size_t address) {
+    size_t val = 0;
+    pread(ptedit_umem, &val, sizeof(size_t), address);
+    return val;
+}
+
+
+// ---------------------------------------------------------------------------
+static ptedit_entry_t ptedit_resolve_user_ext(void* address, pid_t pid, ptedit_phys_read_t deref) {
     size_t root = (pid == 0) ? ptedit_paging_root : ptedit_get_paging_root(pid);
-    ptedit_read_physical_page(root / ptedit_pagesize, (char *)pgd);
 
     int pgdi, p4di, pudi, pmdi, pti;
     size_t addr = (size_t)address;
@@ -935,15 +950,16 @@ ptedit_entry_t ptedit_resolve_user(void* address, pid_t pid) {
     
     size_t pgd_entry, p4d_entry, pud_entry, pmd_entry, pt_entry;
     
-    pgd_entry = pgd[pgdi];
+//     printf("%zx + CR3(%zx) + PGDI(%zx) * 8 = %zx\n", ptedit_vmem, root, pgdi, ptedit_vmem + root + pgdi * sizeof(size_t));
+    pgd_entry = deref(root + pgdi * sizeof(size_t));
     if(ptedit_cast(pgd_entry, ptedit_pgd_t).present != PTEDIT_PAGE_PRESENT) {
         return resolved;
     }
     resolved.pgd = pgd_entry;
     resolved.valid |= PTEDIT_VALID_MASK_PGD;
     if(ptedit_paging_definition.has_p4d) {    
-        ptedit_read_physical_page(ptedit_get_pfn(pgd_entry), (char *)p4d);
-        p4d_entry = p4d[p4di];
+        size_t pfn = (size_t)(ptedit_cast(pgd_entry, ptedit_pgd_t).pfn);
+        p4d_entry = deref(pfn * ptedit_pagesize + p4di * sizeof(size_t));
         if(ptedit_cast(p4d_entry, ptedit_p4d_t).present != PTEDIT_PAGE_PRESENT) {
             return resolved;
         }
@@ -954,8 +970,8 @@ ptedit_entry_t ptedit_resolve_user(void* address, pid_t pid) {
     resolved.valid |= PTEDIT_VALID_MASK_P4D;
 
     if(ptedit_paging_definition.has_pud) {
-        ptedit_read_physical_page(ptedit_get_pfn(p4d_entry), (char *)pud);
-        pud_entry = pud[pudi];
+        size_t pfn = (size_t)(ptedit_cast(p4d_entry, ptedit_p4d_t).pfn);
+        pud_entry = deref(pfn * ptedit_pagesize + pudi * sizeof(size_t));
         if(ptedit_cast(pud_entry, ptedit_pud_t).present != PTEDIT_PAGE_PRESENT) {
             return resolved;
         }
@@ -966,8 +982,8 @@ ptedit_entry_t ptedit_resolve_user(void* address, pid_t pid) {
     resolved.valid |= PTEDIT_VALID_MASK_PUD;
     
     if(ptedit_paging_definition.has_pmd) {
-        ptedit_read_physical_page(ptedit_get_pfn(pud_entry), (char *)pmd);
-        pmd_entry = pmd[pmdi];
+        size_t pfn = (size_t)(ptedit_cast(pud_entry, ptedit_pud_t).pfn);
+        pmd_entry = deref(pfn * ptedit_pagesize + pmdi * sizeof(size_t));
         if(ptedit_cast(pmd_entry, ptedit_pmd_t).present != PTEDIT_PAGE_PRESENT) {
             return resolved;
         }
@@ -981,8 +997,8 @@ ptedit_entry_t ptedit_resolve_user(void* address, pid_t pid) {
     if(!ptedit_cast(pmd_entry, ptedit_pmd_t).size) {
 #endif
         // normal 4kb page
-        ptedit_read_physical_page(ptedit_get_pfn(pmd_entry), (char *)pt);
-        pt_entry = pt[pti];
+        size_t pfn = (size_t)(ptedit_cast(pmd_entry, ptedit_pmd_t).pfn);
+        pt_entry = deref(pfn * ptedit_pagesize + pti * sizeof(size_t)); //pt[pti];
         if(ptedit_cast(pt_entry, ptedit_pte_t).present != PTEDIT_PAGE_PRESENT) {
             return resolved;
         }
@@ -993,6 +1009,19 @@ ptedit_entry_t ptedit_resolve_user(void* address, pid_t pid) {
 #endif
     return resolved;
 }
+
+
+// ---------------------------------------------------------------------------
+static ptedit_entry_t ptedit_resolve_user(void* address, pid_t pid) {
+    return ptedit_resolve_user_ext(address, pid, ptedit_phys_read_pread);
+}
+
+
+// ---------------------------------------------------------------------------
+static ptedit_entry_t ptedit_resolve_user_map(void* address, pid_t pid) {
+    return ptedit_resolve_user_ext(address, pid, ptedit_phys_read_map);
+}
+
 
 // ---------------------------------------------------------------------------
 void ptedit_update_kernel(void* address, pid_t pid, ptedit_entry_t* vm) {
@@ -1237,11 +1266,11 @@ int ptedit_init() {
     return -1;
   }
   ptedit_umem = open("/proc/umem", O_RDWR);
-  if(ptedit_umem > 0) {
-      ptedit_use_implementation(PTEDIT_IMPL_USER);
-  } else {
-      ptedit_use_implementation(PTEDIT_IMPL_KERNEL);
-  }
+//   if(ptedit_umem > 0) {
+//       ptedit_use_implementation(PTEDIT_IMPL_USER);
+//   } else {
+  ptedit_use_implementation(PTEDIT_IMPL_KERNEL);
+//   }
   ptedit_pagesize = getpagesize();
 #if defined(__i386__) || defined(__x86_64__)
     ptedit_paging_definition.has_pgd = 1;
@@ -1288,12 +1317,20 @@ void ptedit_use_implementation(int implementation) {
     if(implementation == PTEDIT_IMPL_KERNEL) {
         ptedit_resolve = ptedit_resolve_kernel;
         ptedit_update = ptedit_update_kernel;
-    } else if(implementation == PTEDIT_IMPL_USER) {
+    } else if(implementation == PTEDIT_IMPL_USER_PREAD) {
         ptedit_resolve = ptedit_resolve_user;
         ptedit_update = ptedit_update_user;
         ptedit_paging_root = ptedit_get_paging_root(0);
+    } else if(implementation == PTEDIT_IMPL_USER) {
+        ptedit_resolve = ptedit_resolve_user_map;
+        ptedit_update = ptedit_update_user;
+        ptedit_paging_root = ptedit_get_paging_root(0);
+        if(!ptedit_vmem) {
+            ptedit_vmem = mmap(NULL, 32ull * 1024ull * 1024ull * 1024ull, PROT_READ, MAP_PRIVATE | MAP_NORESERVE, ptedit_umem, 0);
+            fprintf(stderr, PTEDIT_COLOR_GREEN "[+]" PTEDIT_COLOR_RESET " Mapped physical memory to %p\n", ptedit_vmem);
+        }
     } else {
-        fprintf(stderr, PTEDIT_COLOR_RED "[-]" PTEDIT_COLOR_RESET "Error: PTEditor implementation not supported!\n");
+        fprintf(stderr, PTEDIT_COLOR_RED "[-]" PTEDIT_COLOR_RESET " Error: PTEditor implementation not supported!\n");
     }
 }
 
@@ -1334,6 +1371,7 @@ void ptedit_write_physical_page(size_t pfn, char* content) {
 size_t ptedit_get_paging_root(pid_t pid) {
   ptedit_paging_t cr3;
   cr3.pid = (size_t)pid;
+  cr3.root = 0;
   ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_GET_ROOT, (size_t)&cr3);
   return cr3.root;
 }

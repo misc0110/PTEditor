@@ -1,8 +1,11 @@
-all: memmap nx map_pt uncachable virt2phys
+all: memmap nx map_pt uncachable virt2phys performance
 
 memmap: memmap.c
 	gcc memmap.c -o memmap
-
+	
+performance: performance.c
+	gcc performance.c -o performance
+	
 nx: nx.c
 	gcc nx.c -o nx
 
