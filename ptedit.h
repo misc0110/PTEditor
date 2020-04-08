@@ -6,15 +6,19 @@
 #include "module/pteditor.h"
 #include <sys/types.h>
 
+#if defined(WINDOWS)
+typedef size_t pid_t;
+#endif
+
 /**
  * The implementation of PTEditor to use
- * 
+ *
  * @defgroup PTEDITOR_IMPLEMENTATION PTEditor Implementation
- * 
+ *
  * @{
  */
 
-/** Use the kernel to resolve and update paging structures */
+ /** Use the kernel to resolve and update paging structures */
 #define PTEDIT_IMPL_KERNEL       0
 /** Use the user-space implemenation to resolve and update paging structures, using pread to read from the memory mapping */
 #define PTEDIT_IMPL_USER_PREAD   1
@@ -30,9 +34,9 @@
  *
  */
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
 
-/** Page is present */
+ /** Page is present */
 #define PTEDIT_PAGE_BIT_PRESENT 0
 /** Page is writeable */
 #define PTEDIT_PAGE_BIT_RW 1
@@ -75,7 +79,7 @@
 
 #elif defined(__aarch64__)
 
-/** Entry type 1/2 */
+ /** Entry type 1/2 */
 #define PTEDIT_PAGE_BIT_TYPE_BIT0 0
 /** Entry type 1/2 */
 #define PTEDIT_PAGE_BIT_TYPE_BIT1 1
@@ -136,7 +140,7 @@
  */
 #if defined(__i386__) || defined(__x86_64__)
 
-/** Strong uncachable (nothing is cached) */
+ /** Strong uncachable (nothing is cached) */
 #define PTEDIT_MT_UC      0
 /** Write combining (consecuite writes are combined in a WC buffer and then written once) */
 #define PTEDIT_MT_WC      1
@@ -151,7 +155,7 @@
 
 #elif defined(__aarch64__)
 
-/** Strong uncachable (nothing is cached) */
+ /** Strong uncachable (nothing is cached) */
 #define PTEDIT_MT_UC      0x44
 /** Write through (read accesses are cached, write access are written to cache and memory) */
 #define PTEDIT_MT_WT      0xbb
@@ -170,12 +174,12 @@
  * @{
  */
 
-/**
- * Initializes (and acquires) PTEditor kernel module
- *
- * @return 0 Initialization was successful
- * @return -1 Initialization failed
- */
+ /**
+  * Initializes (and acquires) PTEditor kernel module
+  *
+  * @return 0 Initialization was successful
+  * @return -1 Initialization failed
+  */
 int ptedit_init();
 
 /**
@@ -186,9 +190,9 @@ void ptedit_cleanup();
 
 /**
  * Switch between kernel and user-space implementation
- * 
+ *
  * @param[in] implementation The implementation to use, either PTEDIT_IMPL_KERNEL, PTEDIT_IMPL_USER, or PTEDIT_IMPL_USER_PREAD
- * 
+ *
  */
 void ptedit_use_implementation(int implementation);
 
@@ -205,7 +209,7 @@ void ptedit_use_implementation(int implementation);
  * @{
  */
 
-typedef ptedit_entry_t (*ptedit_resolve_t)(void*, pid_t);
+typedef ptedit_entry_t(*ptedit_resolve_t)(void*, pid_t);
 typedef void (*ptedit_update_t)(void*, pid_t, ptedit_entry_t*);
 
 
@@ -284,27 +288,29 @@ size_t ptedit_pte_get_pfn(void* address, pid_t pid);
 void ptedit_pte_set_pfn(void* address, pid_t pid, size_t pfn);
 
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
 #define PTEDIT_PAGE_PRESENT 1
 
 /**
  * Struct to access the fields of the PGD
  */
+#pragma pack(push,1)
 typedef struct {
-  size_t present                   :1;
-  size_t writeable                 :1;
-  size_t user_access               :1;
-  size_t write_through             :1;
-  size_t cache_disabled            :1;
-  size_t accessed                  :1;
-  size_t ignored_3                 :1;
-  size_t size                      :1;
-  size_t ignored_2                 :4;
-  size_t pfn                       :28;
-  size_t reserved_1                :12;
-  size_t ignored_1                 :11;
-  size_t execution_disabled        :1;
-} __attribute__((__packed__)) ptedit_pgd_t;
+    size_t present : 1;
+    size_t writeable : 1;
+    size_t user_access : 1;
+    size_t write_through : 1;
+    size_t cache_disabled : 1;
+    size_t accessed : 1;
+    size_t ignored_3 : 1;
+    size_t size : 1;
+    size_t ignored_2 : 4;
+    size_t pfn : 28;
+    size_t reserved_1 : 12;
+    size_t ignored_1 : 11;
+    size_t execution_disabled : 1;
+} ptedit_pgd_t;
+#pragma pack(pop)
 
 
 /**
@@ -328,45 +334,48 @@ typedef ptedit_pgd_t ptedit_pmd_t;
 /**
  * Struct to access the fields of the PMD when mapping a  large page (2MB)
  */
+#pragma pack(push,1)
 typedef struct {
-  size_t present                   :1;
-  size_t writeable                 :1;
-  size_t user_access               :1;
-  size_t write_through             :1;
-  size_t cache_disabled            :1;
-  size_t accessed                  :1;
-  size_t dirty                     :1;
-  size_t size                      :1;
-  size_t global                    :1;
-  size_t ignored_2                 :3;
-  size_t pat                       :1;
-  size_t reserved_2                :8;
-  size_t pfn                       :19;
-  size_t reserved_1                :12;
-  size_t ignored_1                 :11;
-  size_t execution_disabled        :1;
-} __attribute__((__packed__)) ptedit_pmd_large_t;
-
+    size_t present : 1;
+    size_t writeable : 1;
+    size_t user_access : 1;
+    size_t write_through : 1;
+    size_t cache_disabled : 1;
+    size_t accessed : 1;
+    size_t dirty : 1;
+    size_t size : 1;
+    size_t global : 1;
+    size_t ignored_2 : 3;
+    size_t pat : 1;
+    size_t reserved_2 : 8;
+    size_t pfn : 19;
+    size_t reserved_1 : 12;
+    size_t ignored_1 : 11;
+    size_t execution_disabled : 1;
+} ptedit_pmd_large_t;
+#pragma pack(pop)
 
 /**
  * Struct to access the fields of the PTE
  */
+#pragma pack(push,1)
 typedef struct {
-  size_t present                   :1;
-  size_t writeable                 :1;
-  size_t user_access               :1;
-  size_t write_through             :1;
-  size_t cache_disabled            :1;
-  size_t accessed                  :1;
-  size_t dirty                     :1;
-  size_t size                      :1;
-  size_t global                    :1;
-  size_t ignored_2                 :3;
-  size_t pfn                       :28;
-  size_t reserved_1                :12;
-  size_t ignored_1                 :11;
-  size_t execution_disabled        :1;
-} __attribute__((__packed__)) ptedit_pte_t;
+    size_t present : 1;
+    size_t writeable : 1;
+    size_t user_access : 1;
+    size_t write_through : 1;
+    size_t cache_disabled : 1;
+    size_t accessed : 1;
+    size_t dirty : 1;
+    size_t size : 1;
+    size_t global : 1;
+    size_t ignored_2 : 3;
+    size_t pfn : 28;
+    size_t reserved_1 : 12;
+    size_t ignored_1 : 11;
+    size_t execution_disabled : 1;
+} ptedit_pte_t;
+#pragma pack(pop)
 
 #elif defined(__aarch64__)
 #define PTEDIT_PAGE_PRESENT 3
@@ -376,15 +385,15 @@ typedef struct {
  * Struct to access the fields of the PGD
  */
 typedef struct {
-    size_t present                 :2;
-    size_t ignored_1               :10;
-    size_t pfn                     :36;
-    size_t reserved                :4;
-    size_t ignored_2               :7;
-    size_t pxn_table               :1;
-    size_t xn_table                :1;
-    size_t ap_table                :2;
-    size_t ns_table                :1;
+    size_t present : 2;
+    size_t ignored_1 : 10;
+    size_t pfn : 36;
+    size_t reserved : 4;
+    size_t ignored_2 : 7;
+    size_t pxn_table : 1;
+    size_t xn_table : 1;
+    size_t ap_table : 2;
+    size_t ns_table : 1;
 }__attribute__((__packed__)) ptedit_pgd_t;
 
 
@@ -410,21 +419,21 @@ typedef ptedit_pgd_t ptedit_pmd_t;
  * Struct to access the fields of the PGD when mapping a large page
  */
 typedef struct {
-    size_t present                 :2;
-    size_t memory_attributes_index :3;
-    size_t non_secure              :1;
-    size_t access_permissions      :2;
-    size_t shareability_field      :2;
-    size_t access_flag             :1;
-    size_t not_global              :1;
-    size_t reserved_1              :18;
-    size_t pfn                     :18;
-    size_t reserved_2              :4;
-    size_t contiguous              :1;
-    size_t privileged_execute_never:1;
-    size_t execute_never           :1;
-    size_t ingored_1               :4;
-    size_t ignored_2               :5;
+    size_t present : 2;
+    size_t memory_attributes_index : 3;
+    size_t non_secure : 1;
+    size_t access_permissions : 2;
+    size_t shareability_field : 2;
+    size_t access_flag : 1;
+    size_t not_global : 1;
+    size_t reserved_1 : 18;
+    size_t pfn : 18;
+    size_t reserved_2 : 4;
+    size_t contiguous : 1;
+    size_t privileged_execute_never : 1;
+    size_t execute_never : 1;
+    size_t ingored_1 : 4;
+    size_t ignored_2 : 5;
 }__attribute__((__packed__)) ptedit_pgd_large_t;
 
 
@@ -432,21 +441,21 @@ typedef struct {
  * Struct to access the fields of the PMD when mapping a large page
  */
 typedef struct {
-    size_t present                 :2;
-    size_t memory_attributes_index :3;
-    size_t non_secure              :1;
-    size_t access_permissions      :2;
-    size_t shareability_field      :2;
-    size_t access_flag             :1;
-    size_t not_global              :1;
-    size_t reserved_1              :9;
-    size_t pfn                     :27;
-    size_t reserved_2              :4;
-    size_t contiguous              :1;
-    size_t privileged_execute_never:1;
-    size_t execute_never           :1;
-    size_t ingored_1               :4;
-    size_t ignored_2               :5;
+    size_t present : 2;
+    size_t memory_attributes_index : 3;
+    size_t non_secure : 1;
+    size_t access_permissions : 2;
+    size_t shareability_field : 2;
+    size_t access_flag : 1;
+    size_t not_global : 1;
+    size_t reserved_1 : 9;
+    size_t pfn : 27;
+    size_t reserved_2 : 4;
+    size_t contiguous : 1;
+    size_t privileged_execute_never : 1;
+    size_t execute_never : 1;
+    size_t ingored_1 : 4;
+    size_t ignored_2 : 5;
 }__attribute__((__packed__)) ptedit_pmd_large_t;
 
 
@@ -454,50 +463,50 @@ typedef struct {
  * Struct to access the fields of the PTE
  */
 typedef struct {
-    size_t present                 :2;
-    size_t memory_attributes_index :3;
-    size_t non_secure              :1;
-    size_t access_permissions      :2;
-    size_t shareability_field      :2;
-    size_t access_flag             :1;
-    size_t not_global              :1;
-    size_t pfn                     :36;
-    size_t reserved_1              :4;
-    size_t contiguous              :1;
-    size_t privileged_execute_never:1;
-    size_t execute_never           :1;
-    size_t ingored_1               :4;
-    size_t ignored_2               :5;
+    size_t present : 2;
+    size_t memory_attributes_index : 3;
+    size_t non_secure : 1;
+    size_t access_permissions : 2;
+    size_t shareability_field : 2;
+    size_t access_flag : 1;
+    size_t not_global : 1;
+    size_t pfn : 36;
+    size_t reserved_1 : 4;
+    size_t contiguous : 1;
+    size_t privileged_execute_never : 1;
+    size_t execute_never : 1;
+    size_t ingored_1 : 4;
+    size_t ignored_2 : 5;
 }__attribute__((__packed__)) ptedit_pte_t;
 #endif
 
 /**
  * Casts a paging structure entry (e.g., page table) to a structure with easy access to its fields
- * 
+ *
  * @param[in] v Entry to Cast
  * @param[in] type Data type of struct to cast to, e.g., ptedit_pte_t
- * 
+ *
  * @return Struct of type "type" with easily accessible fields
  */
 #define ptedit_cast(v, type) (*((type*)(&(v))))
 
-/** @} */
+ /** @} */
 
 
 
-/**
- * General system info
- *
- * @defgroup SYSTEMINFO System info
- *
- * @{
- */
+ /**
+  * General system info
+  *
+  * @defgroup SYSTEMINFO System info
+  *
+  * @{
+  */
 
-/**
- * Returns the default page size of the system
- *
- * @return Page size of the system in bytes
- */
+  /**
+   * Returns the default page size of the system
+   *
+   * @return Page size of the system in bytes
+   */
 int ptedit_get_pagesize();
 
 /** @} */
@@ -512,14 +521,14 @@ int ptedit_get_pagesize();
  * @{
  */
 
-/**
- * Returns a new page-table entry where the page-frame number (PFN) is replaced by the specified one.
- *
- * @param[in] entry The page-table entry to modify
- * @param[in] pfn The new page-frame number (PFN)
- *
- * @return A new page-table entry with the given page-frame number
- */
+ /**
+  * Returns a new page-table entry where the page-frame number (PFN) is replaced by the specified one.
+  *
+  * @param[in] entry The page-table entry to modify
+  * @param[in] pfn The new page-frame number (PFN)
+  *
+  * @return A new page-table entry with the given page-frame number
+  */
 size_t ptedit_set_pfn(size_t entry, size_t pfn);
 
 /**
@@ -544,13 +553,13 @@ size_t ptedit_get_pfn(size_t entry);
  * @{
  */
 
-/**
- * Retrieves the content of a physical page.
- *
- * @param[in] pfn The page-frame number (PFN) of the page to read
- * @param[out] buffer A buffer which is large enough to hold the content of the page
- *
- */
+ /**
+  * Retrieves the content of a physical page.
+  *
+  * @param[in] pfn The page-frame number (PFN) of the page to read
+  * @param[out] buffer A buffer which is large enough to hold the content of the page
+  *
+  */
 void ptedit_read_physical_page(size_t pfn, char* buffer);
 
 /**
@@ -564,10 +573,10 @@ void ptedit_write_physical_page(size_t pfn, char* content);
 
 /**
  * Map a physical address range.
- * 
+ *
  * @param[in] physical The physical address to map
  * @param[in] length The length of the physical memory range to map
- * 
+ *
  * @return A virtual address that can be used to access the physical range
  */
 void* ptedit_pmap(size_t physical, size_t length);
@@ -585,14 +594,14 @@ void* ptedit_pmap(size_t physical, size_t length);
  * @{
  */
 
-/**
- * Returns the root of the paging structure (i.e., CR3 on x86 and TTBR0 on ARM).
- *
- * @param[in] pid The proccess id (0 for own process)
- *
- * @return The phyiscal address (not PFN!) of the first page table (i.e., the PGD)
- *
- */
+ /**
+  * Returns the root of the paging structure (i.e., CR3 on x86 and TTBR0 on ARM).
+  *
+  * @param[in] pid The proccess id (0 for own process)
+  *
+  * @return The phyiscal address (not PFN!) of the first page table (i.e., the PGD)
+  *
+  */
 size_t ptedit_get_paging_root(pid_t pid);
 
 /**
@@ -615,12 +624,12 @@ void ptedit_set_paging_root(pid_t pid, size_t root);
  * @{
  */
 
-/**
- * Invalidates the TLB for a given address on all CPUs.
- *
- * @param[in] address The address to invalidate
- *
- */
+ /**
+  * Invalidates the TLB for a given address on all CPUs.
+  *
+  * @param[in] address The address to invalidate
+  *
+  */
 void ptedit_invalidate_tlb(void* address);
 
 
@@ -642,12 +651,12 @@ void ptedit_full_serializing_barrier();
  * @{
  */
 
-/**
- * Reads the value of all memory types (x86 PATs / ARM MAIRs). This is equivalent to reading the MSR 0x277 (x86) / MAIR_EL1 (ARM).
- *
- * @return The memory types in the same format as in the IA32_PAT MSR / MAIR_EL1
- *
- */
+ /**
+  * Reads the value of all memory types (x86 PATs / ARM MAIRs). This is equivalent to reading the MSR 0x277 (x86) / MAIR_EL1 (ARM).
+  *
+  * @return The memory types in the same format as in the IA32_PAT MSR / MAIR_EL1
+  *
+  */
 size_t ptedit_get_mts();
 
 /**
@@ -740,12 +749,12 @@ const char* ptedit_mt_to_string(unsigned char mt);
  * @{
  */
 
-/**
- * Pretty prints a ptedit_entry_t struct.
- *
- * @param[in] entry A ptedit_entry_t struct
- *
- */
+ /**
+  * Pretty prints a ptedit_entry_t struct.
+  *
+  * @param[in] entry A ptedit_entry_t struct
+  *
+  */
 void ptedit_print_entry_t(ptedit_entry_t entry);
 
 /**
@@ -768,4 +777,3 @@ void ptedit_print_entry_line(size_t entry, int line);
 /** @} */
 
 #endif
-
