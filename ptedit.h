@@ -138,7 +138,7 @@ typedef size_t pid_t;
  *
  * @{
  */
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
 
  /** Strong uncachable (nothing is cached) */
 #define PTEDIT_MT_UC      0

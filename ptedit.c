@@ -594,7 +594,12 @@ void ptedit_set_paging_root(pid_t pid, size_t root) {
 #if defined(LINUX)
     ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_SET_ROOT, (size_t)&cr3);
 #else
-    NO_WINDOWS_SUPPORT
+    DWORD returnLength;
+    if (!pid) pid = GetCurrentProcessId();
+    size_t info[2];
+    info[0] = pid;
+    info[1] = root;
+    DeviceIoControl(ptedit_fd, PTEDITOR_SET_CR3, (LPVOID)info, sizeof(info), (LPVOID)info, sizeof(info), &returnLength, 0);
 #endif
 }
 
@@ -617,7 +622,8 @@ size_t ptedit_get_mts() {
 #if defined(LINUX)
     ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_GET_PAT, (size_t)&mt);
 #else
-    NO_WINDOWS_SUPPORT;
+    DWORD returnLength;
+    DeviceIoControl(ptedit_fd, PTEDITOR_GET_PAT, (LPVOID)&mt, sizeof(mt), (LPVOID)&mt, sizeof(mt), &returnLength, 0);
 #endif
     return mt;
 }
@@ -687,7 +693,8 @@ void ptedit_set_mts(size_t mts) {
 #if defined(LINUX)
     ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_SET_PAT, mts);
 #else
-    NO_WINDOWS_SUPPORT
+    DWORD returnLength;
+    DeviceIoControl(ptedit_fd, PTEDITOR_GET_PAT, (LPVOID)&mts, sizeof(mts), (LPVOID)&mts, sizeof(mts), &returnLength, 0);
 #endif
 }
 
@@ -736,8 +743,13 @@ int ptedit_find_first_mt(unsigned char type) {
 #if defined(LINUX)
     return __builtin_ffs(ptedit_find_mt(type)) - 1;
 #else
-    NO_WINDOWS_SUPPORT;
-    return 0;
+    DWORD index = 0;
+    if (BitScanForward64(&index, ptedit_find_mt(type))) {
+        return index;
+    }
+    else {
+        return -1;
+    }
 #endif
 }
 
