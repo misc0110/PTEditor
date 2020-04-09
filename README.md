@@ -1,19 +1,21 @@
 # PTEditor
 
-A small library to modify all page-table levels of all processes from user space for x86_64 and ARMv8.
+A small library to modify all page-table levels of all processes from user space for x86_64 (Linux and Windows 10) and ARMv8 (Linux).
 It also allows to read and program memory types (i.e., PATs on x86 and MAIRs on ARM).
 
 # Installation
 
-The library relies on the `pteditor` kernel module. Both the library and the the kernel module can be build by running
+The library relies on the `pteditor` kernel module (Linux) or kernel driver (Windows). Both the library and the the kernel module can be build by running
 
     make
+    
+The kernel driver for Windows requires Visual Studio to build. However, the repository also contains a pre-built driver for Windows 10. 
 
 The library can be used by linking it to the application (see `example.c`) or as a single header (`ptedit_header.h`) which can be directly included (see the demos). 
 
 # Requirements
 
-The library requires a recent Linux kernel (tested on 4.11, but should also work on 3.x kernels). 
+The library requires a recent Linux kernel (tested on 5.0 and 4.11, but should also work on 3.x kernels) or Windows 10. 
 It supports both x86_64 and ARMv8. 
 
 The library does not rely on any other library. It uses only standard C functionality. 
