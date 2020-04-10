@@ -5,13 +5,69 @@ It also allows to read and program memory types (i.e., PATs on x86 and MAIRs on 
 
 # Installation
 
-The library relies on the `pteditor` kernel module (Linux) or kernel driver (Windows). Both the library and the the kernel module can be build by running
+The library relies on the `pteditor` kernel module (Linux) or kernel driver (Windows). The kernel part is provided as source code for compilation (Linux and Windows), PPA (Linux), and as pre-built binary (Windows).
+The library can be used by linking it to the application (see `example.c`) or as a single header (`ptedit_header.h`) which can be directly included (see the demos). 
+
+### Install from PPA (Linux, recommended)
+
+First, add the public key of the PPA and the PPA URL to the package manager, and update the package manager
+
+    curl -s "https://misc0110.github.io/ppa/KEY.gpg" | sudo apt-key add -
+    sudo curl -s -o /etc/apt/sources.list.d/misc0110.list "https://misc0110.github.io/ppa/file.list"
+    sudo apt update
+
+Then, simply install the kernel module
+
+    sudo apt install pteditor-dkms
+
+
+### Pre-Built Driver (Windows, recommended)
+The repository also contains a pre-built driver for Windows 10 in the `driver` folder. 
+To load the driver, you have to first disable secure boot and driver signature enforcement.
+
+#### Temporarily Disable Driver Signature Enforcement
+Hold the shift key while clicking on "Restart" in the start menu. This brings up a restart menu, where you can disable driver signature enforcement in "Troubleshoot > Advanced Options > Startup Settings". Press "Restart", and the in the startup settings press "7" or "F7" to disable driver signature enforcement. 
+After the PC is started, the driver can be loaded. Keep in mind that the driver signature enforcement is enabled when the PC is rebooted. 
+
+#### Permanently Disable Driver Signature Enforcement
+To permanently disable driver signature enforcement, enable Windows test mode by entering 
+
+    bcdedit /set testsigning on
+
+in an administrator command prompt. To disable test mode, run
+
+    bcdedit /set testsigning off
+
+#### Loading the Driver
+To load and active the driver, the repository contains a loader in `driver/PTEditorLoader`. Simply run 
+
+    PTEditorLoader.exe
+    
+as an administrator. To unload the driver, run
+
+    PTEditorLoader.exe --unload
+
+Alternatively, you can also use any other driver-loading tool, e.g., OSRLoader or NoVirusThanks Kernel-Mode Driver Loader. 
+    
+### Install Kernel Part From Source
+
+#### Linux
+Building the kernel module requires the kernel headers of the kernel. On Ubuntu, they can be installed by running
+
+    sudo apt install linux-headers-$(uname -r)
+
+Both the library and the the kernel module can be build by running
 
     make
     
-The kernel driver for Windows requires Visual Studio to build. However, the repository also contains a pre-built driver for Windows 10. 
+The resulting kernel module can be loaded using
 
-The library can be used by linking it to the application (see `example.c`) or as a single header (`ptedit_header.h`) which can be directly included (see the demos). 
+    sudo insmod module/pteditor.ko
+    
+#### Windows
+The kernel driver for Windows requires Visual Studio with Visual C++, the Windows SDK, and the Windows Driver Kit (WDK) to build. 
+Using the Visual Studio project, the driver can then simply be built from Visual Studio. 
+
 
 # Requirements
 
@@ -19,6 +75,7 @@ The library requires a recent Linux kernel (tested on 5.0 and 4.11, but should a
 It supports both x86_64 and ARMv8. 
 
 The library does not rely on any other library. It uses only standard C functionality. 
+On Linux, the library does not require root privileges, whereas on Windows it requires administrator privileges. 
 
 # Example
 
@@ -32,6 +89,7 @@ The `demo` folder contains multiple examples:
 * `uncachable`: This demos manipulates the memory type of a mapping to uncachable and back to cachable.
 * `nx`: After setting a function to non-executable, it uses the page tables to make the function executable again.
 * `virt2phys`: Converts a virtual to a physical address.
+* `performance`: Measures how many addresses can be resolved per second.
 
 # API
 
