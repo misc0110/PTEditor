@@ -87,8 +87,7 @@ NTSTATUS DispatchDeviceCtl(PDEVICE_OBJECT DevObject, PIRP Irp) {
         break;
     case PTEDITOR_GET_CR3:
         DbgPrint(TAG_INFO "get CR3 for %zx\r\n", *((SIZE_T*)buffer));
-        PsLookupProcessByProcessId((HANDLE)(*((PHANDLE)buffer)), &Process);
-        if (Process != NULL) {
+        if(PsLookupProcessByProcessId((HANDLE)(*((PHANDLE)buffer)), &Process) == STATUS_SUCCESS) {
             KAPC_STATE apcState;
             KeStackAttachProcess(Process, &apcState);
             SIZE_T cr3 = __readcr3();
@@ -98,13 +97,13 @@ NTSTATUS DispatchDeviceCtl(PDEVICE_OBJECT DevObject, PIRP Irp) {
         }
         else {
             DbgPrint(TAG_WARN "could not find process!\r\n");
+            *((SIZE_T*)buffer) = 0;
         }
         returnLength = sizeof(SIZE_T);
         break;
     case PTEDITOR_SET_CR3:
         DbgPrint(TAG_INFO "set CR3 for %zx\r\n", *((SIZE_T*)buffer));
-        PsLookupProcessByProcessId((HANDLE)(*((PHANDLE)buffer)), &Process);
-        if (Process != NULL) {
+        if(PsLookupProcessByProcessId((HANDLE)(*((PHANDLE)buffer)), &Process) == STATUS_SUCCESS) {
             KAPC_STATE apcState;
             KeStackAttachProcess(Process, &apcState);
             __writecr3(*(((SIZE_T*)buffer) + 1));
