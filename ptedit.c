@@ -243,16 +243,16 @@ void ptedit_update_user_ext(void* address, pid_t pid, ptedit_entry_t* vm, ptedit
     pti = (addr >> ptedit_paging_definition.page_offset) % (1ull << ptedit_paging_definition.pt_entries);
 
     if ((vm->valid & PTEDIT_VALID_MASK_PTE) && (current.valid & PTEDIT_VALID_MASK_PTE)) {
-        pset(ptedit_cast(current.pmd, ptedit_pmd_t).pfn * ptedit_pagesize + pti * (ptedit_pagesize / (1 << ptedit_paging_definition.pt_entries)), vm->pte);
+        pset((size_t)ptedit_cast(current.pmd, ptedit_pmd_t).pfn * ptedit_pagesize + pti * (ptedit_pagesize / (1 << ptedit_paging_definition.pt_entries)), vm->pte);
     }
     if ((vm->valid & PTEDIT_VALID_MASK_PMD) && (current.valid & PTEDIT_VALID_MASK_PMD) && ptedit_paging_definition.has_pmd) {
-        pset(ptedit_cast(current.pud, ptedit_pud_t).pfn * ptedit_pagesize + pmdi * (ptedit_pagesize / (1 << ptedit_paging_definition.pmd_entries)), vm->pmd);
+        pset((size_t)ptedit_cast(current.pud, ptedit_pud_t).pfn * ptedit_pagesize + pmdi * (ptedit_pagesize / (1 << ptedit_paging_definition.pmd_entries)), vm->pmd);
     }
     if ((vm->valid & PTEDIT_VALID_MASK_PUD) && (current.valid & PTEDIT_VALID_MASK_PUD) && ptedit_paging_definition.has_pud) {
-        pset(ptedit_cast(current.p4d, ptedit_p4d_t).pfn * ptedit_pagesize + pudi * (ptedit_pagesize / (1 << ptedit_paging_definition.pud_entries)), vm->pud);
+        pset((size_t)ptedit_cast(current.p4d, ptedit_p4d_t).pfn * ptedit_pagesize + pudi * (ptedit_pagesize / (1 << ptedit_paging_definition.pud_entries)), vm->pud);
     }
     if ((vm->valid & PTEDIT_VALID_MASK_P4D) && (current.valid & PTEDIT_VALID_MASK_P4D) && ptedit_paging_definition.has_p4d) {
-        pset(ptedit_cast(current.pgd, ptedit_pgd_t).pfn * ptedit_pagesize + p4di * (ptedit_pagesize / (1 << ptedit_paging_definition.p4d_entries)), vm->p4d);
+        pset((size_t)ptedit_cast(current.pgd, ptedit_pgd_t).pfn * ptedit_pagesize + p4di * (ptedit_pagesize / (1 << ptedit_paging_definition.p4d_entries)), vm->p4d);
     }
     if ((vm->valid & PTEDIT_VALID_MASK_PGD) && (current.valid & PTEDIT_VALID_MASK_PGD) && ptedit_paging_definition.has_pgd) {
         pset(root + pgdi * (ptedit_pagesize / (1 << ptedit_paging_definition.pgd_entries)), vm->pgd);
@@ -264,12 +264,14 @@ void ptedit_update_user_ext(void* address, pid_t pid, ptedit_entry_t* vm, ptedit
 // ---------------------------------------------------------------------------
 static void ptedit_update_user(void* address, pid_t pid, ptedit_entry_t* vm) {
     ptedit_update_user_ext(address, pid, vm, ptedit_phys_write_pwrite);
+    ptedit_invalidate_tlb(address);
 }
 
 
 // ---------------------------------------------------------------------------
 static void ptedit_update_user_map(void* address, pid_t pid, ptedit_entry_t* vm) {
     ptedit_update_user_ext(address, pid, vm, ptedit_phys_write_map);
+    ptedit_invalidate_tlb(address);
 }
 
 // ---------------------------------------------------------------------------
