@@ -113,7 +113,7 @@ The `demo` folder contains multiple examples:
 `unsigned char `[`ptedit_pte_get_bit`](#group__PAGETABLE_1ga978d010f4278e953bdc84df3adc4eee2)`(void * address,pid_t pid,int bit)`            | Returns the value of a bit directly from the PTE of an address.
 `size_t `[`ptedit_pte_get_pfn`](#group__PAGETABLE_1ga323e5f2c138ff70f4ed3ab4e96e6f3e3)`(void * address,pid_t pid)`            | Reads the PFN directly from the PTE of an address.
 `void `[`ptedit_pte_set_pfn`](#group__PAGETABLE_1gaa7211a27e72e3a1d3d78fac4dee8bfd3)`(void * address,pid_t pid,size_t pfn)`            | Sets the PFN directly in the PTE of an address.
-`TYPE `[`ptedit_cast`](#group__PAGETABLE_cast)`(size_t entry, TYPE) | Casts a paging structure entry (e.g., page table) to a structure with easy access to its fields
+`TYPE `[`ptedit_cast`](#group__PAGETABLE_cast)`(size_t entry, TYPE)` | Casts a paging structure entry (e.g., page table) to a structure with easy access to its fields
 
 
 System Info | Descriptions
