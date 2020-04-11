@@ -77,6 +77,11 @@ It supports both x86_64 and ARMv8.
 The library does not rely on any other library. It uses only standard C functionality. 
 On Linux, the library does not require root privileges, whereas on Windows it requires administrator privileges. 
 
+# Test
+
+To test whether the kernel part and the library works, the repository contains unit tests. 
+The tests are found in the folder `test` and can be compiled with `make` (Linux) or Visual Studio (Windows). 
+
 # Example
 
 The basic functionality (`ptedit_init` and `ptedit_cleanup`) is always required. 
