@@ -102,6 +102,7 @@ The `demo` folder contains multiple examples:
 --------------------------------|---------------------------------------------
 `int `[`ptedit_init`](#group__BASIC_1gad452cf561308666214c69fc5feb89a1c)`()`            | Initializes (and acquires) PTEditor kernel module
 `void `[`ptedit_cleanup`](#group__BASIC_1ga1fc9e84e43f3b38c20ef46b7929603b8)`()`            | Releases PTEditor kernel module
+`void `[`ptedit_use_implementation`](#group__BASIC_implementation)`(int implementation)`  | Select the PTEditor implementation to use
 
  Page tables            | Descriptions
 --------------------------------|---------------------------------------------
@@ -112,6 +113,8 @@ The `demo` folder contains multiple examples:
 `unsigned char `[`ptedit_pte_get_bit`](#group__PAGETABLE_1ga978d010f4278e953bdc84df3adc4eee2)`(void * address,pid_t pid,int bit)`            | Returns the value of a bit directly from the PTE of an address.
 `size_t `[`ptedit_pte_get_pfn`](#group__PAGETABLE_1ga323e5f2c138ff70f4ed3ab4e96e6f3e3)`(void * address,pid_t pid)`            | Reads the PFN directly from the PTE of an address.
 `void `[`ptedit_pte_set_pfn`](#group__PAGETABLE_1gaa7211a27e72e3a1d3d78fac4dee8bfd3)`(void * address,pid_t pid,size_t pfn)`            | Sets the PFN directly in the PTE of an address.
+`TYPE `[`ptedit_cast`](#group__PAGETABLE_cast)`(size_t entry, TYPE) | Casts a paging structure entry (e.g., page table) to a structure with easy access to its fields
+
 
 System Info | Descriptions
 --------------------------------|---------------------------------------------
@@ -126,6 +129,7 @@ System Info | Descriptions
 --------------------------------|---------------------------------------------
 `void `[`ptedit_read_physical_page`](#group__PHYSICALPAGE_1gaadee01c80dcb1a6a7523d46840ef72ac)`(size_t pfn,char * buffer)`            | Retrieves the content of a physical page.
 `void `[`ptedit_write_physical_page`](#group__PHYSICALPAGE_1gab2ba740cbf618d678b61b57cd7827881)`(size_t pfn,char * content)`            | Replaces the content of a physical page.
+`void * `[`ptedit_pmap`](#group__PHYSICALPAGE_pmap)`(size_t physical,size_t pfn)` | Map a physical address range to the virtual address space.
 
  Paging       | Descriptions
 --------------------------------|---------------------------------------------
@@ -169,6 +173,16 @@ Initializes (and acquires) PTEditor kernel module
 ### `void `[`ptedit_cleanup`](#group__BASIC_1ga1fc9e84e43f3b38c20ef46b7929603b8)`()`
 
 Releases PTEditor kernel module
+
+### `void `[`ptedit_use_implementation`](#group__BASIC_implementation)`(int implementation)`  
+
+Select the PTEditor implementation to use
+
+**Parameters**
+* `implementation` The implementation to use. Depending on the operating system and architecture, one or more of the following are supported: `PTEDIT_IMPL_KERNEL`, `PTEDIT_IMPL_USER`, `PTEDIT_IMPL_USER_PREAD`. 
+  * `PTEDIT_IMPL_KERNEL` uses the kernel functionality to resolve and update page tables (default on Linux).
+  * `PTEDIT_IMPL_USER` maps the physical memory to user space and only requires switches to the kernel for flushing the TLB after page-table updates.
+  * `PTEDIT_IMPL_USER_PREAD` implements the page walk in user space but relies on the kernel for reading and writing physical addresses (default on Windows). 
 
 ## Page tables
 
@@ -254,6 +268,19 @@ Sets the PFN directly in the PTE of an address.
 
 * `pfn` The new page-frame number (PFN)
 
+## `TYPE `[`ptedit_cast`](#group__PAGETABLE_cast)`(size_t entry, TYPE)`
+
+Casts a paging structure entry (e.g., page table) to a structure with easy access to its fields.
+
+**Parameters**
+* `entry` The entry to cast
+
+* `type` Data type of struct to cast to, one of `ptedit_pgd_t`, `ptedit_p4d_t`, `ptedut_pud_t`, `ptedit_pmd_t`, `ptedit_pte_t`
+
+**Returns**
+A struct of type `type` which has bit-fields for the parts of the corresponding paging structure. 
+
+
 ## System info
 
 ### `int `[`ptedit_get_pagesize`](#group__SYSTEMINFO_1ga943074fddc99eade63764b599cccc392)`()`
@@ -306,6 +333,21 @@ Replaces the content of a physical page.
 * `pfn` The page-frame number (PFN) of the page to update
 
 * `content` A buffer containing the new content of the page (must be the size of a physical page)
+
+### `void * `[`ptedit_pmap`](#group__PHYSICALPAGE_pmap)`(size_t physical,size_t pfn)`
+
+Map a physical address range to the virtual address space.
+
+**Parameters**
+* `physical` The physical address to map
+
+* `length` The length of the physical memory range to map
+
+**Returns**
+A virtual address that can be used to access the physical address.
+
+**Note**
+This function is not supported on Windows. 
 
 ## Paging
 
