@@ -125,6 +125,8 @@ static ptedit_entry_t ptedit_resolve_user_ext(void* address, pid_t pid, ptedit_p
     resolved.vaddr = (size_t)address;
     resolved.pid = (size_t)pid;
     resolved.valid = 0;
+    
+    if(!root) return resolved;
 
     size_t pgd_entry, p4d_entry, pud_entry, pmd_entry, pt_entry;
 
@@ -224,6 +226,8 @@ void ptedit_update_user_ext(void* address, pid_t pid, ptedit_entry_t* vm, ptedit
     ptedit_entry_t current = ptedit_resolve(address, pid);
     size_t root = (pid == 0) ? ptedit_paging_root : ptedit_get_paging_root(pid);
 
+    if(!root) return;
+    
     size_t pgdi, p4di, pudi, pmdi, pti;
     size_t addr = (size_t)address;
     pgdi = (addr >> (ptedit_paging_definition.page_offset

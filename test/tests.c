@@ -4,25 +4,39 @@
 
 UTEST_STATE();
 
-char __attribute__((aligned(4096))) page1[4096];
-char __attribute__((aligned(4096))) page2[4096];
-char __attribute__((aligned(4096))) scratch[4096];
-char __attribute__((aligned(4096))) accessor[4096];
+#if defined(LINUX)
+#define PAGE_ALIGN_CHAR char __attribute__((aligned(4096)))
+#else
+#define PAGE_ALIGN_CHAR __declspec(align(4096)) char
+#endif
+
+PAGE_ALIGN_CHAR page1[4096];
+PAGE_ALIGN_CHAR page2[4096];
+PAGE_ALIGN_CHAR scratch[4096];
+PAGE_ALIGN_CHAR accessor[4096];
 
 // =========================================================================
 //                             Helper functions
 // =========================================================================
 
+#if defined(LINUX)
 size_t hrtime() {
     struct timespec t1;
     clock_gettime(CLOCK_MONOTONIC, &t1);
     return t1.tv_sec * 1000 * 1000 * 1000ULL + t1.tv_nsec;
 }
+#else
+size_t hrtime() {
+    __int64 wintime; 
+    GetSystemTimePreciseAsFileTime((FILETIME*)&wintime);
+    return wintime;
+}
+#endif
 
 typedef void (*access_time_callback_t)(void*);
 
 int access_time_ext(void *ptr, size_t MEASUREMENTS, access_time_callback_t cb) {
-  uint64_t start = 0, end = 0, sum = 0;
+  size_t start = 0, end = 0, sum = 0;
 
   for (int i = 0; i < MEASUREMENTS; i++) {
     start = hrtime();
@@ -32,7 +46,7 @@ int access_time_ext(void *ptr, size_t MEASUREMENTS, access_time_callback_t cb) {
     if(cb) cb(ptr);
   }
 
-  return (int)(sum / MEASUREMENTS);
+  return (int)(10 * sum / MEASUREMENTS);
 }
 
 int access_time(void *ptr) {
@@ -193,7 +207,7 @@ UTEST(pte, pte_set_pfn_basic) {
     ASSERT_NE(entry, ptedit_set_pfn(entry, 1));
     ASSERT_EQ(entry, ptedit_set_pfn(ptedit_set_pfn(entry, 1234), 0));
     ASSERT_GT(ptedit_set_pfn(entry, 2), ptedit_set_pfn(entry, 1));
-    entry = -1ull;
+    entry = (size_t)-1;
     ASSERT_NE(0, ptedit_set_pfn(entry, 0));
 }
 
@@ -310,7 +324,7 @@ UTEST(memtype, apply) {
 
 UTEST(memtype, extract) {
     ASSERT_TRUE(ptedit_extract_mt(ptedit_apply_mt(0, 5)) == 5);
-    ASSERT_TRUE(ptedit_extract_mt(ptedit_apply_mt(-1ull, 2)) == 2);
+    ASSERT_TRUE(ptedit_extract_mt(ptedit_apply_mt((size_t)-1, 2)) == 2);
 }
 
 UTEST(memtype, uncachable_access_time) {
@@ -336,6 +350,7 @@ UTEST(memtype, uncachable_access_time) {
     ptedit_update(scratch, 0, &entry);   
     
     int after = access_time(scratch);
+
     ASSERT_LT(after + 5, uc);
     ASSERT_LT(before + 5, uc);
 }
@@ -352,16 +367,15 @@ UTEST(tlb, access_time) {
 }
 
 
-
 int main(int argc, const char *const argv[]) {
     if(ptedit_init()) {
         printf("Could not initialize PTEditor, did you load the kernel module?\n");
         return 1;
     }
-    memset(scratch, 0, sizeof(page1));
+    memset(scratch, 0, sizeof(scratch));
     memset(page1, 0, sizeof(page1));
     memset(page2, 1, sizeof(page2));
-    memset(accessor, 2, sizeof(page2));
+    memset(accessor, 2, sizeof(accessor));
     
 //     ptedit_use_implementation(PTEDIT_IMPL_USER_PREAD);
     
