@@ -39,6 +39,26 @@ int access_time(void *ptr) {
   return access_time_ext(ptr, 1000000, NULL);
 }
 
+int entry_equal(ptedit_entry_t* e1, ptedit_entry_t* e2) {
+    int diff = 0;
+    if((e1->valid & PTEDIT_VALID_MASK_PGD) && (e2->valid & PTEDIT_VALID_MASK_PGD)) {
+        diff |= e1->pgd ^ e2->pgd;
+    }
+    if((e1->valid & PTEDIT_VALID_MASK_P4D) && (e2->valid & PTEDIT_VALID_MASK_P4D)) {
+        diff |= e1->p4d ^ e2->p4d;
+    }    
+    if((e1->valid & PTEDIT_VALID_MASK_PUD) && (e2->valid & PTEDIT_VALID_MASK_PUD)) {
+        diff |= e1->pud ^ e2->pud;
+    }
+    if((e1->valid & PTEDIT_VALID_MASK_PMD) && (e2->valid & PTEDIT_VALID_MASK_PMD)) {
+        diff |= e1->pmd ^ e2->pmd;
+    }
+    if((e1->valid & PTEDIT_VALID_MASK_PTE) && (e2->valid & PTEDIT_VALID_MASK_PTE)) {
+        diff |= e1->pte ^ e2->pte;
+    }
+    return !diff;
+}
+
 // =========================================================================
 //                             Resolving addresses
 // =========================================================================
@@ -64,13 +84,13 @@ UTEST(resolve, resolve_valid_mask) {
 UTEST(resolve, resolve_deterministic) {
     ptedit_entry_t vm1 = ptedit_resolve(page1, 0);
     ptedit_entry_t vm2 = ptedit_resolve(page1, 0);
-    ASSERT_TRUE(!memcmp(&vm1, &vm2, sizeof(vm1)));
+    ASSERT_TRUE(entry_equal(&vm1, &vm2));
 }
 
 UTEST(resolve, resolve_different) {
     ptedit_entry_t vm1 = ptedit_resolve(page1, 0);
     ptedit_entry_t vm2 = ptedit_resolve(page2, 0);
-    ASSERT_FALSE(!memcmp(&vm1, &vm2, sizeof(vm1)));
+    ASSERT_FALSE(entry_equal(&vm1, &vm2));
 }
 
 UTEST(resolve, resolve_invalid) {
@@ -87,13 +107,13 @@ UTEST(resolve, resolve_page_offset) {
     ptedit_entry_t vm1 = ptedit_resolve(page1, 0);
     ptedit_entry_t vm2 = ptedit_resolve(page1 + 1, 0);
     vm1.vaddr = vm2.vaddr = 0;
-    ASSERT_TRUE(!memcmp(&vm1, &vm2, sizeof(vm1)));
+    ASSERT_TRUE(entry_equal(&vm1, &vm2));
     ptedit_entry_t vm3 = ptedit_resolve(page1 + 1024, 0);
     vm1.vaddr = vm3.vaddr = 0;
-    ASSERT_TRUE(!memcmp(&vm1, &vm3, sizeof(vm1)));
+    ASSERT_TRUE(entry_equal(&vm1, &vm3));
     ptedit_entry_t vm4 = ptedit_resolve(page1 + 4095, 0);
     vm1.vaddr = vm4.vaddr = 0;
-    ASSERT_TRUE(!memcmp(&vm1, &vm4, sizeof(vm1)));
+    ASSERT_TRUE(entry_equal(&vm1, &vm4));
 }
 
 
@@ -109,7 +129,7 @@ UTEST(update, nop) {
     ptedit_update(scratch, 0, &vm1);
     vm1.valid = valid;
     ptedit_entry_t vm2 = ptedit_resolve(scratch, 0);
-    ASSERT_TRUE(!memcmp(&vm1, &vm1, sizeof(vm1)));
+    ASSERT_TRUE(entry_equal(&vm1, &vm2));
 }
 
 UTEST(update, pte_nop) {
@@ -120,7 +140,7 @@ UTEST(update, pte_nop) {
     ptedit_update(scratch, 0, &vm1);
     vm1.valid = valid;
     ptedit_entry_t vm2 = ptedit_resolve(scratch, 0);
-    ASSERT_TRUE(!memcmp(&vm1, &vm1, sizeof(vm1)));
+    ASSERT_TRUE(entry_equal(&vm1, &vm2));
 }
 
 UTEST(update, new_pte) {
@@ -141,7 +161,7 @@ UTEST(update, new_pte) {
     ptedit_update(scratch, 0, &vm1);
     
     ptedit_entry_t vm2 = ptedit_resolve(scratch, 0);
-    ASSERT_TRUE(!memcmp(&vm, &vm2, sizeof(vm)));
+    ASSERT_TRUE(entry_equal(&vm, &vm2));
 }
 
 // =========================================================================
