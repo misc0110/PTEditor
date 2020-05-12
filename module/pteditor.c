@@ -463,9 +463,13 @@ static struct miscdevice misc_dev = {
 };
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
-static struct proc_ops umem_pops = { 0 };
+static struct proc_ops umem_ops = { 0 };
+#define OPS(o) umem_ops.proc_##o
+#define OP_lseek lseek
 #else
-static struct file_operations umem_fops = {.owner = THIS_MODULE};
+static struct file_operations umem_ops = {.owner = THIS_MODULE};
+#define OPS(o) umem_ops.o
+#define OP_lseek llseek
 #endif
 
 static int open_umem(struct inode *inode, struct file *filp) { return 0; }
@@ -505,36 +509,17 @@ int init_module(void) {
   }
 #endif
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
-  umem_pops.proc_lseek = (void*)kallsyms_lookup_name("memory_lseek");
-  umem_pops.proc_read = (void*)kallsyms_lookup_name("read_mem");
-  umem_pops.proc_write = (void*)kallsyms_lookup_name("write_mem");
-  umem_pops.proc_mmap = (void*)kallsyms_lookup_name("mmap_mem");
-  umem_pops.proc_open = open_umem;
-#else
-  umem_fops.llseek = (void*)kallsyms_lookup_name("memory_lseek");
-  umem_fops.read = (void*)kallsyms_lookup_name("read_mem");
-  umem_fops.write = (void*)kallsyms_lookup_name("write_mem");
-  umem_fops.mmap = (void*)kallsyms_lookup_name("mmap_mem");
-  umem_fops.open = open_umem;
-#endif
+  OPS(OP_lseek) = (void*)kallsyms_lookup_name("memory_lseek");
+  OPS(read) = (void*)kallsyms_lookup_name("read_mem");
+  OPS(write) = (void*)kallsyms_lookup_name("write_mem");
+  OPS(mmap) = (void*)kallsyms_lookup_name("mmap_mem");
+  OPS(open) = open_umem;
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
-  if (!umem_pops.proc_lseek || !umem_pops.proc_read || !umem_pops.proc_write ||
-      !umem_pops.proc_mmap || !umem_pops.proc_open) {
+  if (!OPS(OP_lseek) || !OPS(read) || !OPS(write) ||
+      !OPS(mmap) || !OPS(open)) {
     printk(KERN_ALERT"[pteditor-module] Could not create unprivileged memory access\n");
   } else {
-#else
-  if (!umem_fops.llseek || !umem_fops.read || !umem_fops.write ||
-      !umem_fops.mmap || !umem_fops.open) {
-    printk(KERN_ALERT"[pteditor-module] Could not create unprivileged memory access\n");
-  } else {
-#endif
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
-    proc_create("umem", 0666, NULL, &umem_pops);
-#else
-    proc_create("umem", 0666, NULL, &umem_fops);
-#endif
+    proc_create("umem", 0666, NULL, &umem_ops);
     printk(KERN_INFO "[pteditor-module] Unprivileged memory access via /proc/umem set up\n");
     has_umem = 1;
   }
