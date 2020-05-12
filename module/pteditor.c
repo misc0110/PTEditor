@@ -1,5 +1,6 @@
 #include <asm/tlbflush.h>
 #include <asm/uaccess.h>
+#include <asm/io.h>
 #include <linux/fs.h>
 #include <linux/miscdevice.h>
 #include <linux/mm.h>
@@ -461,7 +462,11 @@ static struct miscdevice misc_dev = {
     .mode = S_IRWXUGO,
 };
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+static struct proc_ops umem_pops = { 0 };
+#else
 static struct file_operations umem_fops = {.owner = THIS_MODULE};
+#endif
 
 static int open_umem(struct inode *inode, struct file *filp) { return 0; }
 static int has_umem = 0;
@@ -500,17 +505,36 @@ int init_module(void) {
   }
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+  umem_pops.proc_lseek = (void*)kallsyms_lookup_name("memory_lseek");
+  umem_pops.proc_read = (void*)kallsyms_lookup_name("read_mem");
+  umem_pops.proc_write = (void*)kallsyms_lookup_name("write_mem");
+  umem_pops.proc_mmap = (void*)kallsyms_lookup_name("mmap_mem");
+  umem_pops.proc_open = open_umem;
+#else
   umem_fops.llseek = (void*)kallsyms_lookup_name("memory_lseek");
   umem_fops.read = (void*)kallsyms_lookup_name("read_mem");
   umem_fops.write = (void*)kallsyms_lookup_name("write_mem");
   umem_fops.mmap = (void*)kallsyms_lookup_name("mmap_mem");
   umem_fops.open = open_umem;
+#endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+  if (!umem_pops.proc_lseek || !umem_pops.proc_read || !umem_pops.proc_write ||
+      !umem_pops.proc_mmap || !umem_pops.proc_open) {
+    printk(KERN_ALERT"[pteditor-module] Could not create unprivileged memory access\n");
+  } else {
+#else
   if (!umem_fops.llseek || !umem_fops.read || !umem_fops.write ||
       !umem_fops.mmap || !umem_fops.open) {
     printk(KERN_ALERT"[pteditor-module] Could not create unprivileged memory access\n");
   } else {
+#endif
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+    proc_create("umem", 0666, NULL, &umem_pops);
+#else
     proc_create("umem", 0666, NULL, &umem_fops);
+#endif
     printk(KERN_INFO "[pteditor-module] Unprivileged memory access via /proc/umem set up\n");
     has_umem = 1;
   }
