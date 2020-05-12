@@ -464,12 +464,13 @@ static struct miscdevice misc_dev = {
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
 static struct proc_ops umem_ops = { 0 };
-#define OPS(o) umem_ops.proc_##o
 #define OP_lseek lseek
+#define OPCAT(a, b) a ## b
+#define OPS(o) OPCAT(umem_ops.proc_, o)
 #else
 static struct file_operations umem_ops = {.owner = THIS_MODULE};
-#define OPS(o) umem_ops.o
 #define OP_lseek llseek
+#define OPS(o) umem_ops.o
 #endif
 
 static int open_umem(struct inode *inode, struct file *filp) { return 0; }
