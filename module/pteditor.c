@@ -2,6 +2,8 @@
 #include <asm/uaccess.h>
 #include <asm/io.h>
 #include <linux/fs.h>
+#include <linux/fs.h>
+#include <linux/kallsyms.h>
 #include <linux/miscdevice.h>
 #include <linux/mm.h>
 #include <linux/module.h>
@@ -463,7 +465,23 @@ static struct miscdevice misc_dev = {
 };
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
-static struct proc_ops umem_ops = { 0 };
+static struct proc_ops umem_ops = {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0)
+  .proc_flags = 0,
+#endif
+  .proc_open = NULL,
+  .proc_read = NULL,
+  .proc_write = NULL,
+  .proc_lseek = NULL,
+  .proc_release = NULL,
+  .proc_poll = NULL,
+  .proc_ioctl = NULL,
+#ifdef CONFIG_COMPAT
+  .proc_compat_ioctl = NULL,
+#endif
+  .proc_mmap = NULL,
+  .proc_get_unmapped_area = NULL,
+};
 #define OP_lseek lseek
 #define OPCAT(a, b) a ## b
 #define OPS(o) OPCAT(umem_ops.proc_, o)
