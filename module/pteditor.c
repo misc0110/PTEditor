@@ -63,6 +63,25 @@ static inline int pmd_large(pmd_t pmd) {
 #define to_user copy_to_user
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0)
+unsigned long kallsyms_lookup_name(const char* name) {
+  struct kprobe kp = {
+    .symbol_name	= name,
+  };
+
+  int ret = register_kprobe(&kp);
+  if (ret < 0) {
+    return 0;
+  };
+
+  unsigned long addr = kp.addr;
+
+  unregister_kprobe(&kp);
+
+  return addr;
+}
+#endif
+
 typedef struct {
     size_t pid;
     pgd_t *pgd;
