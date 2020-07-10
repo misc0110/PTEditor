@@ -2,6 +2,8 @@
 #include <asm/uaccess.h>
 #include <asm/io.h>
 #include <linux/fs.h>
+#include <linux/fs.h>
+#include <linux/kallsyms.h>
 #include <linux/miscdevice.h>
 #include <linux/mm.h>
 #include <linux/module.h>
@@ -59,6 +61,25 @@ static inline int pmd_large(pmd_t pmd) {
 #else
 #define from_user copy_from_user
 #define to_user copy_to_user
+#endif
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0)
+unsigned long kallsyms_lookup_name(const char* name) {
+  struct kprobe kp = {
+    .symbol_name	= name,
+  };
+
+  int ret = register_kprobe(&kp);
+  if (ret < 0) {
+    return 0;
+  };
+
+  unsigned long addr = kp.addr;
+
+  unregister_kprobe(&kp);
+
+  return addr;
+}
 #endif
 
 typedef struct {
@@ -463,7 +484,23 @@ static struct miscdevice misc_dev = {
 };
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
-static struct proc_ops umem_ops = { 0 };
+static struct proc_ops umem_ops = {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0)
+  .proc_flags = 0,
+#endif
+  .proc_open = NULL,
+  .proc_read = NULL,
+  .proc_write = NULL,
+  .proc_lseek = NULL,
+  .proc_release = NULL,
+  .proc_poll = NULL,
+  .proc_ioctl = NULL,
+#ifdef CONFIG_COMPAT
+  .proc_compat_ioctl = NULL,
+#endif
+  .proc_mmap = NULL,
+  .proc_get_unmapped_area = NULL,
+};
 #define OP_lseek lseek
 #define OPCAT(a, b) a ## b
 #define OPS(o) OPCAT(umem_ops.proc_, o)
