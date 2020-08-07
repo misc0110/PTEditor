@@ -979,6 +979,7 @@ ptedit_paging_definition_t ptedit_paging_definition;
 // ---------------------------------------------------------------------------
 ptedit_entry_t ptedit_resolve_kernel(void* address, pid_t pid) {
     ptedit_entry_t vm;
+    memset(&vm, 0, sizeof(vm));
     vm.vaddr = (size_t)address;
     vm.pid = (size_t)pid;
 #if defined(LINUX)
