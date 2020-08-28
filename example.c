@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
     printf(TAG_FAIL "Could not initialize ptedit (did you load the kernel module?)\n");
     return 1;
   }
-  
+
 //   ptedit_use_implementation(PTEDIT_IMPL_KERNEL);
 
   char page[ptedit_get_pagesize()];
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
     goto error;
   }
   ptedit_print_entry_t(vm);
-  printf(TAG_PROGRESS "PTE PFN %zx\n", ptedit_cast(vm.pte, ptedit_pte_t).pfn);
+  printf(TAG_PROGRESS "PTE PFN %zx\n", (size_t)(ptedit_cast(vm.pte, ptedit_pte_t).pfn));
 
   printf(TAG_PROGRESS "address[0] = " COLOR_YELLOW "%c" COLOR_RESET"\n", *(volatile char*)address);
   if(*(volatile char*)address == 'A') {
@@ -85,18 +85,18 @@ int main(int argc, char *argv[]) {
   } else {
       printf(TAG_FAIL "Fail!\n");
   }
-  
+
   printf(TAG_OK "Mapping physical address %zx to new virtual address\n", address_pfn * ptedit_get_pagesize());
   char* new_addr = ptedit_pmap(address_pfn * ptedit_get_pagesize(), ptedit_get_pagesize());
   printf(TAG_PROGRESS "mapped to virtual address %p\n", new_addr);
-  
+
   printf(TAG_OK "old address[0] (via pmap) = " COLOR_YELLOW "%c" COLOR_RESET "\n", new_addr[0]);
   if(new_addr[0] == 'A') {
       printf(TAG_OK "OK!\n");
   } else {
       printf(TAG_FAIL "Fail!\n");
   }
-  
+
 
   printf(TAG_OK "Overwriting physical page of target with " COLOR_YELLOW "C" COLOR_RESET "s\n");
   memset(page, 'C', ptedit_get_pagesize());
