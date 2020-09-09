@@ -140,7 +140,11 @@ _invalidate_tlb(void *addr) {
     }
   } else {
     raw_local_irq_save(flags);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
     cr4 = this_cpu_read(cpu_tlbstate.cr4);
+#else
+    cr4 = __read_cr4();
+#endif
     native_write_cr4(cr4 & ~X86_CR4_PGE);
     native_write_cr4(cr4);
     raw_local_irq_restore(flags);
