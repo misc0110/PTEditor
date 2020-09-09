@@ -12,6 +12,10 @@
 #include <linux/proc_fs.h>
 #include <linux/kprobes.h>
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+#include <linux/mmap_lock.h>
+#endif
+
 #include "pteditor.h"
 
 MODULE_AUTHOR("Michael Schwarz");
@@ -136,7 +140,11 @@ _invalidate_tlb(void *addr) {
     }
   } else {
     raw_local_irq_save(flags);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
     cr4 = this_cpu_read(cpu_tlbstate.cr4);
+#else
+    cr4 = __read_cr4();
+#endif
     native_write_cr4(cr4 & ~X86_CR4_PGE);
     native_write_cr4(cr4);
     raw_local_irq_restore(flags);
@@ -211,7 +219,11 @@ static int resolve_vm(size_t addr, vm_t* entry, int lock) {
   }
 
   /* Lock mm */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+  if(lock) mmap_read_lock(mm);
+#else
   if(lock) down_read(&mm->mmap_sem);
+#endif
 
   /* Return PGD (page global directory) entry */
   entry->pgd = pgd_offset(mm, addr);
@@ -268,14 +280,22 @@ static int resolve_vm(size_t addr, vm_t* entry, int lock) {
   pte_unmap(entry->pte);
 
   /* Unlock mm */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+  if(lock) mmap_read_unlock(mm);
+#else
   if(lock) up_read(&mm->mmap_sem);
+#endif
 
   return 0;
 
 error_out:
 
   /* Unlock mm */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+  if(lock) mmap_read_unlock(mm);
+#else
   if(lock) up_read(&mm->mmap_sem);
+#endif
 
   return 1;
 }
@@ -290,7 +310,11 @@ static int update_vm(ptedit_entry_t* new_entry, int lock) {
   old_entry.pid = new_entry->pid;
 
   /* Lock mm */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+  if(lock) mmap_read_lock(mm);
+#else
   if(lock) down_read(&mm->mmap_sem);
+#endif
 
   resolve_vm(addr, &old_entry, 0);
 
@@ -325,7 +349,11 @@ static int update_vm(ptedit_entry_t* new_entry, int lock) {
   invalidate_tlb(addr);
 
   /* Unlock mm */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+  if(lock) mmap_read_unlock(mm);
+#else
   if(lock) up_read(&mm->mmap_sem);
+#endif
 
   return 0;
 }
@@ -382,7 +410,11 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
             printk("[pteditor-module] VM is already locked\n");
             return -1;
         }
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+        mmap_read_lock(mm);
+#else
         down_read(&mm->mmap_sem);
+#endif
         mm_is_locked = true;
         return 0;
     }
@@ -393,7 +425,11 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
             printk("[pteditor-module] VM is not locked\n");
             return -1;
         }
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+        mmap_read_unlock(mm);
+#else
         up_read(&mm->mmap_sem);
+#endif
         mm_is_locked = false;
         return 0;
     }
@@ -419,9 +455,17 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
         (void)from_user(&paging, (void*)ioctl_param, sizeof(paging));
         mm = get_mm(paging.pid);
         if(!mm) return 1;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+        if(!mm_is_locked) mmap_read_lock(mm);
+#else
         if(!mm_is_locked) down_read(&mm->mmap_sem);
+#endif
         paging.root = virt_to_phys(mm->pgd);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+        if(!mm_is_locked) mmap_read_unlock(mm);
+#else
         if(!mm_is_locked) up_read(&mm->mmap_sem);
+#endif
         (void)to_user((void*)ioctl_param, &paging, sizeof(paging));
         return 0;
     }
@@ -433,9 +477,17 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
         (void)from_user(&paging, (void*)ioctl_param, sizeof(paging));
         mm = get_mm(paging.pid);
         if(!mm) return 1;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+        if(!mm_is_locked) mmap_read_lock(mm);
+#else
         if(!mm_is_locked) down_read(&mm->mmap_sem);
+#endif
         mm->pgd = (pgd_t*)phys_to_virt(paging.root);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+        if(!mm_is_locked) mmap_read_unlock(mm);
+#else
         if(!mm_is_locked) up_read(&mm->mmap_sem);
+#endif
         return 0;
     }
     case PTEDITOR_IOCTL_CMD_GET_PAGESIZE:
