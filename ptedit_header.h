@@ -1008,7 +1008,9 @@ static inline void ptedit_phys_write_map(size_t address, size_t value) {
 static inline size_t ptedit_phys_read_pread(size_t address) {
     size_t val = 0;
 #if defined(LINUX)
-    pread(ptedit_umem, &val, sizeof(size_t), address);
+    if (pread(ptedit_umem, &val, sizeof(size_t), address) == -1) {
+      return val;
+    }
 #else
     ULONG returnLength;
     DeviceIoControl(ptedit_fd, PTEDITOR_READ_PHYS_VAL, (LPVOID)&address, sizeof(address), (LPVOID)&val, sizeof(val), &returnLength, 0);
@@ -1019,7 +1021,9 @@ static inline size_t ptedit_phys_read_pread(size_t address) {
 // ---------------------------------------------------------------------------
 static inline void ptedit_phys_write_pwrite(size_t address, size_t value) {
 #if defined(LINUX)
-    pwrite(ptedit_umem, &value, sizeof(size_t), address);
+    if (pwrite(ptedit_umem, &value, sizeof(size_t), address) == -1) {
+      return;
+    }
 #else
     ULONG returnLength;
     size_t info[2];
@@ -1463,7 +1467,9 @@ int ptedit_get_pagesize() {
 void ptedit_read_physical_page(size_t pfn, char* buffer) {
 #if defined(LINUX)
     if (ptedit_umem > 0) {
-        pread(ptedit_umem, buffer, ptedit_pagesize, pfn * ptedit_pagesize);
+        if (pread(ptedit_umem, buffer, ptedit_pagesize, pfn * ptedit_pagesize) == -1) {
+          return;
+        }
     }
     else {
         ptedit_page_t page;
@@ -1483,7 +1489,9 @@ void ptedit_read_physical_page(size_t pfn, char* buffer) {
 void ptedit_write_physical_page(size_t pfn, char* content) {
 #if defined(LINUX)
     if (ptedit_umem > 0) {
-        pwrite(ptedit_umem, content, ptedit_pagesize, pfn * ptedit_pagesize);
+        if (pwrite(ptedit_umem, content, ptedit_pagesize, pfn * ptedit_pagesize) == -1) {
+          return;
+        }
     }
     else {
         ptedit_page_t page;
