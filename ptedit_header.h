@@ -1216,7 +1216,7 @@ static void ptedit_update_user_map(void* address, pid_t pid, ptedit_entry_t* vm)
 // ---------------------------------------------------------------------------
 void* ptedit_pmap(size_t physical, size_t length) {
 #if defined(LINUX)
-    char* m = mmap(0, length + (physical % ptedit_pagesize), PROT_READ | PROT_WRITE, MAP_SHARED, ptedit_umem, ((size_t)(physical / ptedit_pagesize)) * ptedit_pagesize);
+    char* m = (char*)mmap(0, length + (physical % ptedit_pagesize), PROT_READ | PROT_WRITE, MAP_SHARED, ptedit_umem, ((size_t)(physical / ptedit_pagesize)) * ptedit_pagesize);
     return m + (physical % ptedit_pagesize);
 #else
     NO_WINDOWS_SUPPORT;
@@ -1438,7 +1438,7 @@ void ptedit_use_implementation(int implementation) {
         ptedit_update = ptedit_update_user_map;
         ptedit_paging_root = ptedit_get_paging_root(0);
         if (!ptedit_vmem) {
-            ptedit_vmem = mmap(NULL, 32ull * 1024ull * 1024ull * 1024ull, PROT_READ, MAP_PRIVATE | MAP_NORESERVE, ptedit_umem, 0);
+            ptedit_vmem = (unsigned char*)mmap(NULL, 32ull * 1024ull * 1024ull * 1024ull, PROT_READ, MAP_PRIVATE | MAP_NORESERVE, ptedit_umem, 0);
             fprintf(stderr, PTEDIT_COLOR_GREEN "[+]" PTEDIT_COLOR_RESET " Mapped physical memory to %p\n", ptedit_vmem);
         }
 #else
