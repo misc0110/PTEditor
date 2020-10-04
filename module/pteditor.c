@@ -25,6 +25,13 @@ MODULE_LICENSE("GPL");
 #if defined(__aarch64__)
 #include <linux/hugetlb.h>
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
+typedef pgdval_t p4dval_t;
+#endif
+
+void __attribute__((weak)) set_swapper_pgd(pgd_t* pgdp, pgd_t pgd) {}
+pgd_t __attribute__((weak)) swapper_pg_dir[PTRS_PER_PGD];
+
 static inline pte_t native_make_pte(pteval_t val)
 {
   return __pte(val);
@@ -44,6 +51,13 @@ static inline pud_t native_make_pud(pudval_t val)
 {
   return __pud(val);
 }
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
+
+static inline p4d_t native_make_p4d(p4dval_t val)
+{
+  return __p4d(val);
+}
+#endif
 
 static inline pteval_t native_pte_val(pte_t pte)
 {
@@ -369,7 +383,11 @@ static void vm_to_user(ptedit_entry_t* user, vm_t* vm) {
 #if CONFIG_PGTABLE_LEVELS > 4
     if(vm->p4d) user->p4d = (vm->p4d)->p4d;
 #else
+#if defined(__aarch64__)
+    if(vm->p4d) user->p4d = (vm->p4d)->pgd;
+#else
     if(vm->p4d) user->p4d = (vm->p4d)->pgd.pgd;
+#endif
 #endif
 #endif
 
