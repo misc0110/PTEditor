@@ -391,7 +391,7 @@ static void vm_to_user(ptedit_entry_t* user, vm_t* vm) {
 #if CONFIG_PGTABLE_LEVELS > 4
     if(vm->p4d) user->p4d = (vm->p4d)->p4d;
 #else
-    if(vm->p4d) user->p4d = (vm->p4d)->pgd.pgd;
+    if(vm->p4d) user->p4d = (vm->p4d)->pgd;
 #endif
 #endif
 
