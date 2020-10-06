@@ -65,11 +65,19 @@ static inline pteval_t native_pte_val(pte_t pte)
 }
 
 static inline int pud_large(pud_t pud) {
-  return pud_huge(pud);
+#ifdef __PAGETABLE_PMD_FOLDED 
+    return pud_val(pud) && !(pud_val(pud) & PUD_TABLE_BIT);
+#else
+    return 0;
+#endif
 }
 
 static inline int pmd_large(pmd_t pmd) {
-  return pmd_huge(pmd);
+#ifdef __PAGETABLE_PMD_FOLDED
+    return pmd_val(pmd) && !(pmd_val(pmd) & PMD_TABLE_BIT)
+#else
+    return 0;
+#endif
 }
 #endif
 
@@ -383,11 +391,7 @@ static void vm_to_user(ptedit_entry_t* user, vm_t* vm) {
 #if CONFIG_PGTABLE_LEVELS > 4
     if(vm->p4d) user->p4d = (vm->p4d)->p4d;
 #else
-#if defined(__aarch64__)
-    if(vm->p4d) user->p4d = (vm->p4d)->pgd;
-#else
     if(vm->p4d) user->p4d = (vm->p4d)->pgd.pgd;
-#endif
 #endif
 #endif
 
