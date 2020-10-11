@@ -385,7 +385,8 @@ void ptedit_print_entry_line(size_t entry, int line) {
 
 // ---------------------------------------------------------------------------
 void ptedit_print_entry(size_t entry) {
-    for (int i = 0; i < 4; i++) {
+    int i = 0;
+    for (i = 0; i < 4; i++) {
         ptedit_print_entry_line(entry, i);
     }
 }

@@ -100,11 +100,9 @@ unsigned long kallsyms_lookup_name(const char* name) {
     return 0;
   };
 
-  unsigned long addr = kp.addr;
-
   unregister_kprobe(&kp);
 
-  return addr;
+  return (unsigned long) kp.addr;
 }
 #endif
 
@@ -163,7 +161,11 @@ _invalidate_tlb(void *addr) {
   } else {
     raw_local_irq_save(flags);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 0, 0)
+    cr4 = native_read_cr4();
+#else
     cr4 = this_cpu_read(cpu_tlbstate.cr4);
+#endif
 #else
     cr4 = __read_cr4();
 #endif
