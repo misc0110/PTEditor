@@ -154,7 +154,7 @@ _invalidate_tlb(void *addr) {
   unsigned long cr4;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 2, 98)
-#if defined(X86_FEATURE_INVPCID_SINGLE)
+#if defined(X86_FEATURE_INVPCID_SINGLE) && defined(INVPCID_TYPE_INDIV_ADDR)
   if (cpu_feature_enabled(X86_FEATURE_INVPCID_SINGLE)) {
 #else
   if (0) {
