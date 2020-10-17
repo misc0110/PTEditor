@@ -3,27 +3,10 @@ compiler: gcc
  
 matrix:
   include:
-
-    - os: linux
-      arch:
-        - amd64
-        - arm64  
-      dist: trusty
-      sudo: required
-      addons:
-        apt:
-            update: true
-            packages:
-                - gcc
-                - g++
-                - linux-headers-$(uname -r)
-      env:
-        - CCOMPILER=gcc
-        - CXXCOMPILER=g++
-
-        
+  
     - os: linux
       dist: xenial
+      arch: arm64
       sudo: required
       addons:
         apt:
@@ -40,6 +23,41 @@ matrix:
 
     - os: linux
       dist: xenial
+      arch: amd64
+      sudo: required
+      addons:
+        apt:
+            update: true
+            sources:
+                - sourceline: 'ppa:ubuntu-toolchain-r/test'
+            packages:
+                - gcc-8
+                - g++-8
+                - linux-headers-$(uname -r)
+      env:
+        - CCOMPILER=gcc-8
+        - CXXCOMPILER=g++-8
+        
+    - os: linux
+      dist: xenial
+      arch: arm64
+      sudo: required
+      addons:
+        apt:
+            update: true
+            sources:
+                - sourceline: 'ppa:ubuntu-toolchain-r/test'
+            packages:
+                - gcc-9
+                - g++-9
+                - linux-headers-$(uname -r)
+      env:
+        - CCOMPILER=gcc-9
+        - CXXCOMPILER=g++-9
+        
+    - os: linux
+      dist: xenial
+      arch: amd64
       sudo: required
       addons:
         apt:
@@ -56,6 +74,24 @@ matrix:
 
     - os: linux
       dist: bionic
+      arch: arm64
+      sudo: required
+      addons:
+        apt:
+            update: true
+            sources:
+                - sourceline: 'ppa:ubuntu-toolchain-r/test'
+            packages:
+                - gcc-10
+                - g++-10
+                - linux-headers-$(uname -r)
+      env:
+        - CCOMPILER=gcc-10
+        - CXXCOMPILER=g++-10
+        
+    - os: linux
+      dist: bionic
+      arch: amd64
       sudo: required
       addons:
         apt:
@@ -72,6 +108,7 @@ matrix:
 
     - os: linux
       dist: bionic
+      arch: arm64
       sudo: required
       addons:
         apt:
@@ -85,7 +122,8 @@ matrix:
         - CXXCOMPILER=g++
         
     - os: linux
-      dist: focal
+      dist: bionic
+      arch: amd64
       sudo: required
       addons:
         apt:
@@ -98,6 +136,35 @@ matrix:
         - CCOMPILER=gcc
         - CXXCOMPILER=g++
 
+    - os: linux
+      dist: focal
+      arch: arm64
+      sudo: required
+      addons:
+        apt:
+            update: true
+            packages:
+                - gcc
+                - g++
+                - linux-headers-$(uname -r)
+      env:
+        - CCOMPILER=gcc
+        - CXXCOMPILER=g++
+
+    - os: linux
+      dist: focal
+      arch: amd64
+      sudo: required
+      addons:
+        apt:
+            update: true
+            packages:
+                - gcc
+                - g++
+                - linux-headers-$(uname -r)
+      env:
+        - CCOMPILER=gcc
+        - CXXCOMPILER=g++
         
 install:
   - if [[ -n "$CCOMPILER" ]]; then export CC=$CCOMPILER; fi
