@@ -1,4 +1,4 @@
-language: cpp
+language: c
 compiler: gcc
 matrix:
   include:
@@ -104,6 +104,7 @@ install:
   - if [[ -n "$CXXCOMPILER" ]]; then export CXX=$CXXCOMPILER; fi
       
 script:
+  - uname -a
   - make
   - sudo insmod module/pteditor.ko
   - cd test
