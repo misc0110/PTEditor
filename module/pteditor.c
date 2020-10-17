@@ -156,13 +156,13 @@ _invalidate_tlb(void *addr) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 2, 98)
 #if defined(X86_FEATURE_INVPCID_SINGLE) && defined(INVPCID_TYPE_INDIV_ADDR)
   if (cpu_feature_enabled(X86_FEATURE_INVPCID_SINGLE)) {
-#else
-  if (0) {
-#endif
     for(pcid = 0; pcid < 4096; pcid++) {
       invpcid_flush_one(pcid, (long unsigned int) addr);
     }
-  } else {
+  } 
+  else 
+#endif
+  {
     raw_local_irq_save(flags);
 #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 0, 0)
