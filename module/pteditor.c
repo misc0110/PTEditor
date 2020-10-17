@@ -397,10 +397,13 @@ static void vm_to_user(ptedit_entry_t* user, vm_t* vm) {
 #if CONFIG_PGTABLE_LEVELS > 4
     if(vm->p4d) user->p4d = (vm->p4d)->p4d;
 #else
-    if(vm->p4d) user->p4d = (vm->p4d)->pgd.pgd;    
+#if !defined(__ARCH_HAS_5LEVEL_HACK)
+    if(vm->p4d) user->p4d = (vm->p4d)->pgd.pgd;
+#else
+    if(vm->p4d) user->p4d = (vm->p4d)->pgd;    
 #endif
 #endif
-
+#endif
 #if defined(__i386__) || defined(__x86_64__)
     if(vm->pgd) user->pgd = (vm->pgd)->pgd;
     if(vm->pmd) user->pmd = (vm->pmd)->pmd;
