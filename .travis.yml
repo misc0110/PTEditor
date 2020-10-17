@@ -2,6 +2,25 @@ language: cpp
 compiler: gcc
 matrix:
   include:
+  
+    - arch:
+        - amd64
+        - arm64
+  
+    - os: linux
+      dist: trusty
+      sudo: required
+      addons:
+        apt:
+            update: true
+            packages:
+                - gcc
+                - g++
+                - linux-headers-$(uname -r)
+      env:
+        - CCOMPILER=gcc
+        - CXXCOMPILER=g++
+
         
     - os: linux
       dist: xenial
@@ -14,6 +33,7 @@ matrix:
             packages:
                 - gcc-8
                 - g++-8
+                - linux-headers-$(uname -r)
       env:
         - CCOMPILER=gcc-8
         - CXXCOMPILER=g++-8
@@ -29,6 +49,7 @@ matrix:
             packages:
                 - gcc-9
                 - g++-9
+                - linux-headers-$(uname -r)
       env:
         - CCOMPILER=gcc-9
         - CXXCOMPILER=g++-9
@@ -44,6 +65,7 @@ matrix:
             packages:
                 - gcc-10
                 - g++-10
+                - linux-headers-$(uname -r)
       env:
         - CCOMPILER=gcc-10
         - CXXCOMPILER=g++-10
@@ -57,6 +79,21 @@ matrix:
             packages:
                 - gcc
                 - g++
+                - linux-headers-$(uname -r)
+      env:
+        - CCOMPILER=gcc
+        - CXXCOMPILER=g++
+        
+    - os: linux
+      dist: focal
+      sudo: required
+      addons:
+        apt:
+            update: true
+            packages:
+                - gcc
+                - g++
+                - linux-headers-$(uname -r)
       env:
         - CCOMPILER=gcc
         - CXXCOMPILER=g++
