@@ -1,0 +1,73 @@
+language: cpp
+compiler: gcc
+matrix:
+  include:
+        
+    - os: linux
+      dist: xenial
+      sudo: required
+      addons:
+        apt:
+            update: true
+            sources:
+                - sourceline: 'ppa:ubuntu-toolchain-r/test'
+            packages:
+                - gcc-8
+                - g++-8
+      env:
+        - CCOMPILER=gcc-8
+        - CXXCOMPILER=g++-8
+
+    - os: linux
+      dist: xenial
+      sudo: required
+      addons:
+        apt:
+            update: true
+            sources:
+                - sourceline: 'ppa:ubuntu-toolchain-r/test'
+            packages:
+                - gcc-9
+                - g++-9
+      env:
+        - CCOMPILER=gcc-9
+        - CXXCOMPILER=g++-9
+
+    - os: linux
+      dist: bionic
+      sudo: required
+      addons:
+        apt:
+            update: true
+            sources:
+                - sourceline: 'ppa:ubuntu-toolchain-r/test'
+            packages:
+                - gcc-10
+                - g++-10
+      env:
+        - CCOMPILER=gcc-10
+        - CXXCOMPILER=g++-10
+
+    - os: linux
+      dist: bionic
+      sudo: required
+      addons:
+        apt:
+            update: true
+            packages:
+                - gcc
+                - g++
+      env:
+        - CCOMPILER=gcc
+        - CXXCOMPILER=g++
+
+        
+install:
+  - if [[ -n "$CCOMPILER" ]]; then export CC=$CCOMPILER; fi
+  - if [[ -n "$CXXCOMPILER" ]]; then export CXX=$CXXCOMPILER; fi
+      
+script:
+  - make
+  - sudo insmod module/pteditor.ko
+  - cd test
+  - ./tests
