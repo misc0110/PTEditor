@@ -1,3 +1,9 @@
+pteditor-dkms (0.4) bionic; urgency=medium
+
+  * Fixes for several kernel versions, fixed C warnings, and added C++ compatibility
+
+ -- Michael Schwarz <michael.schwarz91@gmail.com>  Sat, 17 Oct 2020 23:28:14 +0100
+
 pteditor-dkms (0.3.4) bionic; urgency=medium
 
   * Updated for kernel 5.9
