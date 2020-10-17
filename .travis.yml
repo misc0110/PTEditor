@@ -109,6 +109,5 @@ install:
 script:
   - uname -a
   - make
-  - sudo insmod module/pteditor.ko
-  - cd test
-  - TRAVISCI=1 ./tests
+  - uname -a | grep -c x86 && sudo insmod module/pteditor.ko
+  - uname -a | grep -c x86 && TRAVISCI=1 ./test/tests
