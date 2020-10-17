@@ -6,21 +6,6 @@ matrix:
     - arch:
         - amd64
         - arm64
-  
-    - os: linux
-      dist: trusty
-      sudo: required
-      addons:
-        apt:
-            update: true
-            packages:
-                - gcc
-                - g++
-                - linux-headers-$(uname -r)
-      env:
-        - CCOMPILER=gcc
-        - CXXCOMPILER=g++
-
         
     - os: linux
       dist: xenial
