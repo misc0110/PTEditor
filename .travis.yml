@@ -86,20 +86,6 @@ matrix:
         - CCOMPILER=gcc
         - CXXCOMPILER=g++
 
-    - os: linux
-      dist: focal
-      arch: arm64
-      sudo: required
-      addons:
-        apt:
-            update: true
-            packages:
-                - gcc
-                - g++
-                - linux-headers-$(uname -r)
-      env:
-        - CCOMPILER=gcc
-        - CXXCOMPILER=g++
 
     - os: linux
       dist: focal
