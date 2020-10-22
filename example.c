@@ -15,7 +15,7 @@
 #define TAG_PROGRESS COLOR_YELLOW "[~]" COLOR_RESET " "
 
 
-#include "ptedit.h"
+#include "ptedit_header.h"
 
 
 int main(int argc, char *argv[]) {
