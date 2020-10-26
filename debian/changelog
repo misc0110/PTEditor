@@ -2,7 +2,7 @@ pteditor-dkms (0.4.1) bionic; urgency=medium
 
   * Fixes for Ubuntu minimal cloud image
 
--- Michael Schwarz <michael.schwarz91@gmail.com>  Mon, 26 Oct 2020 09:46:37 +0100
+ -- Michael Schwarz <michael.schwarz91@gmail.com>  Mon, 26 Oct 2020 09:46:37 +0100
 
 pteditor-dkms (0.4) bionic; urgency=medium
 
