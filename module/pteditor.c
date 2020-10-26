@@ -16,6 +16,11 @@
 #include <linux/mmap_lock.h>
 #endif
 
+#ifdef CONFIG_PAGE_TABLE_ISOLATION
+pgd_t __attribute__((weak)) __pti_set_user_pgtbl(pgd_t *pgdp, pgd_t pgd);
+#endif
+
+
 #include "pteditor.h"
 
 MODULE_AUTHOR("Michael Schwarz");
