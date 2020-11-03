@@ -1,3 +1,4 @@
+#include <linux/mm_types.h>
 #include <asm/tlbflush.h>
 #include <asm/uaccess.h>
 #include <asm/io.h>
