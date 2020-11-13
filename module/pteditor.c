@@ -135,9 +135,6 @@ static int device_open(struct inode *inode, struct file *file) {
     return -EBUSY;
   }
 
-  /* Lock module */
-  try_module_get(THIS_MODULE);
-
   device_busy = true;
 
   return 0;
@@ -146,8 +143,6 @@ static int device_open(struct inode *inode, struct file *file) {
 static int device_release(struct inode *inode, struct file *file) {
   /* Unlock module */
   device_busy = false;
-
-  module_put(THIS_MODULE);
 
   return 0;
 }
@@ -566,7 +561,8 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
   return 0;
 }
 
-static struct file_operations f_ops = {.unlocked_ioctl = device_ioctl,
+static struct file_operations f_ops = {.owner = THIS_MODULE,
+                                       .unlocked_ioctl = device_ioctl,
                                        .open = device_open,
                                        .release = device_release};
 
