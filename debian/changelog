@@ -1,3 +1,9 @@
+pteditor-dkms (0.4.2) bionic; urgency=medium
+
+  * Fixes for Ubuntu 20.10
+
+ -- Michael Schwarz <michael.schwarz91@gmail.com>  Tue, 17 Nov 2020 20:04:58 +0100
+
 pteditor-dkms (0.4.1) bionic; urgency=medium
 
   * Fixes for Ubuntu minimal cloud image
