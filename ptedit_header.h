@@ -1439,7 +1439,7 @@ void ptedit_use_implementation(int implementation) {
         ptedit_update = ptedit_update_user_map;
         ptedit_paging_root = ptedit_get_paging_root(0);
         if (!ptedit_vmem) {
-            ptedit_vmem = (unsigned char*)mmap(NULL, 32ull * 1024ull * 1024ull * 1024ull, PROT_READ, MAP_PRIVATE | MAP_NORESERVE, ptedit_umem, 0);
+            ptedit_vmem = (unsigned char*)mmap(NULL, 32ull << 30ull, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_NORESERVE, ptedit_umem, 0);
             fprintf(stderr, PTEDIT_COLOR_GREEN "[+]" PTEDIT_COLOR_RESET " Mapped physical memory to %p\n", ptedit_vmem);
         }
 #else
