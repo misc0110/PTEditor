@@ -95,6 +95,11 @@ static inline int pmd_large(pmd_t pmd) {
 #define to_user copy_to_user
 #endif
 
+#ifdef pr_fmt
+#undef pr_fmt
+#endif
+#define pr_fmt(fmt) "[pteditor-module] " fmt
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0)
 unsigned long kallsyms_lookup_name(const char* name) {
   struct kprobe kp = {
@@ -363,29 +368,29 @@ static int update_vm(ptedit_entry_t* new_entry, int lock) {
 
   /* Update entries */
   if((old_entry.valid & PTEDIT_VALID_MASK_PGD) && (new_entry->valid & PTEDIT_VALID_MASK_PGD)) {
-      printk("[pteditor-module] Updating PGD\n");
+      pr_warn("Updating PGD\n");
       set_pgd(old_entry.pgd, native_make_pgd(new_entry->pgd));
   }
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 11, 0)
   if((old_entry.valid & PTEDIT_VALID_MASK_P4D) && (new_entry->valid & PTEDIT_VALID_MASK_P4D)) {
-      printk("[pteditor-module] Updating P4D\n");
+      pr_warn("Updating P4D\n");
       set_p4d(old_entry.p4d, native_make_p4d(new_entry->p4d));
   }
 #endif
 
   if((old_entry.valid & PTEDIT_VALID_MASK_PMD) && (new_entry->valid & PTEDIT_VALID_MASK_PMD)) {
-      printk("[pteditor-module] Updating PMD\n");
+      pr_warn("Updating PMD\n");
       set_pmd(old_entry.pmd, native_make_pmd(new_entry->pmd));
   }
 
   if((old_entry.valid & PTEDIT_VALID_MASK_PUD) && (new_entry->valid & PTEDIT_VALID_MASK_PUD)) {
-      printk("[pteditor-module] Updating PUD\n");
+      pr_warn("Updating PUD\n");
       set_pud(old_entry.pud, native_make_pud(new_entry->pud));
   }
 
   if((old_entry.valid & PTEDIT_VALID_MASK_PTE) && (new_entry->valid & PTEDIT_VALID_MASK_PTE)) {
-      printk("[pteditor-module] Updating PTE\n");
+      pr_warn("Updating PTE\n");
       set_pte(old_entry.pte, native_make_pte(new_entry->pte));
   }
 
@@ -453,7 +458,7 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
     {
         struct mm_struct *mm = current->active_mm;
         if(mm_is_locked) {
-            printk("[pteditor-module] VM is already locked\n");
+            pr_warn("VM is already locked\n");
             return -1;
         }
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
@@ -468,7 +473,7 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
     {
         struct mm_struct *mm = current->active_mm;
         if(!mm_is_locked) {
-            printk("[pteditor-module] VM is not locked\n");
+            pr_warn("VM is not locked\n");
             return -1;
         }
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
@@ -639,13 +644,13 @@ int init_module(void) {
   /* Register device */
   r = misc_register(&misc_dev);
   if (r != 0) {
-    printk(KERN_ALERT "[pteditor-module] Failed registering device with %d\n", r);
+    pr_alert("Failed registering device with %d\n", r);
     return 1;
   }
 
   flush_tlb_mm_range_func = (void *) kallsyms_lookup_name("flush_tlb_mm_range");
   if(!flush_tlb_mm_range_func) {
-    printk(KERN_ALERT "[pteditor-module] Could not retrieve flush_tlb_mm_range function\n");
+    pr_alert("Could not retrieve flush_tlb_mm_range function\n");
   }
   invalidate_tlb = invalidate_tlb_kernel;
 
@@ -653,9 +658,9 @@ int init_module(void) {
   probe_devmem.kp.symbol_name = devmem_hook;
 
   if (register_kretprobe(&probe_devmem) < 0) {
-    printk(KERN_ALERT "[pteditor-module] Could not bypass /dev/mem restriction\n");
+    pr_alert("Could not bypass /dev/mem restriction\n");
   } else {
-    printk(KERN_INFO "[pteditor-module] /dev/mem is now superuser read-/writable\n");
+    pr_info("/dev/mem is now superuser read-/writable\n");
   }
 #endif
 
@@ -667,13 +672,13 @@ int init_module(void) {
 
   if (!OPS(OP_lseek) || !OPS(read) || !OPS(write) ||
       !OPS(mmap) || !OPS(open)) {
-    printk(KERN_ALERT"[pteditor-module] Could not create unprivileged memory access\n");
+    pr_alert("Could not create unprivileged memory access\n");
   } else {
     proc_create("umem", 0666, NULL, &umem_ops);
-    printk(KERN_INFO "[pteditor-module] Unprivileged memory access via /proc/umem set up\n");
+    pr_info("Unprivileged memory access via /proc/umem set up\n");
     has_umem = 1;
   }
-  printk(KERN_INFO "[pteditor-module] Loaded.\n");
+  pr_info("Loaded.\n");
 
   return 0;
 }
@@ -686,8 +691,8 @@ void cleanup_module(void) {
 #endif
 
   if (has_umem) {
-    printk(KERN_INFO "[pteditor-module] Remove unprivileged memory access\n");
+    pr_info("Remove unprivileged memory access\n");
     remove_proc_entry("umem", NULL);
   }
-  printk(KERN_INFO "[pteditor-module] Removed.\n");
+  pr_info("Removed.\n");
 }
