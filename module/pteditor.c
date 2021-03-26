@@ -129,6 +129,10 @@ typedef struct {
 static bool device_busy = false;
 static bool mm_is_locked = false;
 
+void (*invalidate_tlb)(unsigned long);
+void (*flush_tlb_mm_range_func)(struct mm_struct*, unsigned long, unsigned long, unsigned int, bool);
+static struct mm_struct* get_mm(size_t);
+
 static int device_open(struct inode *inode, struct file *file) {
   /* Check if device is busy */
   if (device_busy == true) {
@@ -195,8 +199,13 @@ _invalidate_tlb(void *addr) {
 }
 
 static void
-invalidate_tlb(unsigned long addr) {
+invalidate_tlb_custom(unsigned long addr) {
   on_each_cpu(_invalidate_tlb, (void*) addr, 1);
+}
+
+static void
+invalidate_tlb_kernel(unsigned long addr) {
+  flush_tlb_mm_range_func(get_mm(task_pid_nr(current)), addr, addr + PAGE_SIZE, PAGE_SHIFT, false);
 }
 
 static void _set_pat(void* _pat) {
@@ -553,6 +562,13 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
         set_pat(ioctl_param);
         return 0;
     }
+    case PTEDITOR_IOCTL_CMD_SWITCH_TLB_INVALIDATION:
+    {
+      if((int)ioctl_param != PTEDITOR_TLB_INVALIDATION_KERNEL && (int)ioctl_param != PTEDITOR_TLB_INVALIDATION_CUSTOM)
+        return -1;
+      invalidate_tlb = ((int)ioctl_param == PTEDITOR_TLB_INVALIDATION_KERNEL) ? invalidate_tlb_kernel : invalidate_tlb_custom;
+      return 0;
+    }
 
     default:
         return -1;
@@ -626,7 +642,13 @@ int init_module(void) {
     printk(KERN_ALERT "[pteditor-module] Failed registering device with %d\n", r);
     return 1;
   }
-  
+
+  flush_tlb_mm_range_func = (void *) kallsyms_lookup_name("flush_tlb_mm_range");
+  if(!flush_tlb_mm_range_func) {
+    printk(KERN_ALERT "[pteditor-module] Could not retrieve flush_tlb_mm_range function\n");
+  }
+  invalidate_tlb = invalidate_tlb_kernel;
+
 #if !defined(__aarch64__)
   probe_devmem.kp.symbol_name = devmem_hook;
 

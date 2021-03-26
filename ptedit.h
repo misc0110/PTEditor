@@ -632,6 +632,14 @@ void ptedit_set_paging_root(pid_t pid, size_t root);
   */
 void ptedit_invalidate_tlb(void* address);
 
+ /**
+  * Change the method used for flushing the TLB (either kernel or custom function)
+  *
+  * @param[in] implementation The implementation to use, either PTEDITOR_TLB_INVALIDATION_KERNEL or PTEDITOR_TLB_INVALIDATION_CUSTOM
+  *
+  * @return 0 on success, -1 on failure
+  */
+int ptedit_switch_tlb_invalidation(int implementation);
 
 /**
  * A full serializing barrier which stops everything.

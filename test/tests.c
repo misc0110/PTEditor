@@ -364,13 +364,29 @@ UTEST(memtype, uncachable_access_time) {
 //                               TLB
 // =========================================================================
 
+UTEST(tlb, invalid_tlb_invalidate_method) {
+    int ret = ptedit_switch_tlb_invalidation(3);
+    ASSERT_TRUE(ret);
+}
 
-UTEST(tlb, access_time) {
+UTEST(tlb, valid_tlb_invalidate_method) {
+    int ret = ptedit_switch_tlb_invalidation(PTEDITOR_TLB_INVALIDATION_KERNEL);
+    ASSERT_FALSE(ret);
+}
+
+UTEST(tlb, access_time_kernel_tlb_flush) {
+    ptedit_switch_tlb_invalidation(PTEDITOR_TLB_INVALIDATION_KERNEL);
     int flushed = access_time_ext(scratch, 100, ptedit_invalidate_tlb);
     int normal = access_time_ext(scratch, 100, NULL);
     ASSERT_GT(flushed, normal);
 }
 
+UTEST(tlb, access_time_custom_tlb_flush) {
+    ptedit_switch_tlb_invalidation(PTEDITOR_TLB_INVALIDATION_CUSTOM);
+    int flushed = access_time_ext(scratch, 100, ptedit_invalidate_tlb);
+    int normal = access_time_ext(scratch, 100, NULL);
+    ASSERT_GT(flushed, normal);
+}
 
 int main(int argc, const char *const argv[]) {
     if(ptedit_init()) {
