@@ -129,6 +129,11 @@ typedef struct {
 static bool device_busy = false;
 static bool mm_is_locked = false;
 
+#ifndef PTEDITOR_TLB_INVALIDATION
+void (*flush_tlb_mm_range_func)(struct mm_struct*, unsigned long, unsigned long, unsigned int, bool);
+static struct mm_struct* get_mm(size_t);
+#endif
+
 static int device_open(struct inode *inode, struct file *file) {
   /* Check if device is busy */
   if (device_busy == true) {
@@ -147,6 +152,7 @@ static int device_release(struct inode *inode, struct file *file) {
   return 0;
 }
 
+#ifdef PTEDITOR_TLB_INVALIDATION
 static void
 _invalidate_tlb(void *addr) {
 #if defined(__i386__) || defined(__x86_64__)
@@ -193,10 +199,15 @@ _invalidate_tlb(void *addr) {
   asm volatile ("isb");
 #endif
 }
+#endif
 
 static void
 invalidate_tlb(unsigned long addr) {
+#ifdef PTEDITOR_TLB_INVALIDATION
   on_each_cpu(_invalidate_tlb, (void*) addr, 1);
+#else
+  flush_tlb_mm_range_func(get_mm(task_pid_nr(current)), addr, addr + PAGE_SIZE, PAGE_SHIFT, false);
+#endif
 }
 
 static void _set_pat(void* _pat) {
@@ -626,7 +637,13 @@ int init_module(void) {
     printk(KERN_ALERT "[pteditor-module] Failed registering device with %d\n", r);
     return 1;
   }
-  
+#ifndef PTEDITOR_TLB_INVALIDATION
+  flush_tlb_mm_range_func = (void *) kallsyms_lookup_name("flush_tlb_mm_range");
+  if(!flush_tlb_mm_range_func) {
+    printk(KERN_ALERT "[pteditor-module] Could not retrieve flush_tlb_mm_range function\n");
+  }
+#endif
+
 #if !defined(__aarch64__)
   probe_devmem.kp.symbol_name = devmem_hook;
 

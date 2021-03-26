@@ -60,6 +60,9 @@ Building the kernel module requires the kernel headers of the kernel. On Ubuntu,
 Both the library and the the kernel module can be build by running
 
     make
+By default the kernel module uses internal kernel functions for flushing the TLB. If our custom function should be used instead, build the kernel module by running
+
+    make CFLAGS=-DPTEDITOR_TLB_INVALIDATION
     
 The resulting kernel module can be loaded using
 
