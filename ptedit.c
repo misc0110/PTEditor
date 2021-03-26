@@ -631,6 +631,15 @@ void ptedit_invalidate_tlb(void* address) {
 #endif
 }
 
+// ---------------------------------------------------------------------------
+int ptedit_switch_tlb_invalidation(int implementation) {
+#if defined(LINUX)
+    return (int) ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_SWITCH_TLB_INVALIDATION, (size_t) implementation);
+#else
+    NO_WINDOWS_SUPPORT
+#endif
+}
+
 
 // ---------------------------------------------------------------------------
 size_t ptedit_get_mts() {
