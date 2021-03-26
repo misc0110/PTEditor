@@ -108,6 +108,6 @@ install:
       
 script:
   - uname -a
-  - make
+  - make && git diff --exit-code
   - (uname -a | grep -c x86 && sudo insmod module/pteditor.ko) || echo "Test not supported on ARM"
   - (uname -a | grep -c x86 && TRAVISCI=1 ./test/tests) || echo "Test not supported on ARM"
