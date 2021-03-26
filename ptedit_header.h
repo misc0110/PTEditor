@@ -98,6 +98,9 @@ typedef struct {
 #define PTEDIT_VALID_MASK_PMD (1<<3)
 #define PTEDIT_VALID_MASK_PTE (1<<4)
 
+#define PTEDITOR_TLB_INVALIDATION_KERNEL 0
+#define PTEDITOR_TLB_INVALIDATION_CUSTOM 1
+
 #if defined(LINUX)
 #define PTEDITOR_IOCTL_MAGIC_NUMBER (long)0x3d17
 
@@ -136,6 +139,9 @@ typedef struct {
 
 #define PTEDITOR_IOCTL_CMD_SET_PAT \
   _IOR(PTEDITOR_IOCTL_MAGIC_NUMBER, 12, size_t)
+
+#define PTEDITOR_IOCTL_CMD_SWITCH_TLB_INVALIDATION \
+  _IOR(PTEDITOR_IOCTL_MAGIC_NUMBER, 13, size_t)
 #else
 #define PTEDITOR_READ_PAGE CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
 #define PTEDITOR_WRITE_PAGE CTL_CODE(FILE_DEVICE_UNKNOWN, 0x802, METHOD_BUFFERED, FILE_READ_DATA)
@@ -783,6 +789,14 @@ void ptedit_set_paging_root(pid_t pid, size_t root);
   */
 void ptedit_invalidate_tlb(void* address);
 
+ /**
+  * Change the method used for flushing the TLB (either kernel or custom function)
+  *
+  * @param[in] implementation The implementation to use, either PTEDITOR_TLB_INVALIDATION_KERNEL or PTEDITOR_TLB_INVALIDATION_CUSTOM
+  *
+  * @return 0 on success, -1 on failure
+  */
+int ptedit_switch_tlb_invalidation(int implementation);
 
 /**
  * A full serializing barrier which stops everything.
@@ -1558,6 +1572,15 @@ void ptedit_invalidate_tlb(void* address) {
     size_t vaddr = (size_t)address;
     DWORD returnLength;
     DeviceIoControl(ptedit_fd, PTEDITOR_FLUSH_TLB, (LPVOID)&vaddr, sizeof(vaddr), (LPVOID)&vaddr, sizeof(vaddr), &returnLength, 0);
+#endif
+}
+
+// ---------------------------------------------------------------------------
+int ptedit_switch_tlb_invalidation(int implementation) {
+#if defined(LINUX)
+    return (int) ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_SWITCH_TLB_INVALIDATION, (size_t) implementation);
+#else
+    NO_WINDOWS_SUPPORT
 #endif
 }
 
