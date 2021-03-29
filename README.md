@@ -335,7 +335,7 @@ Replaces the content of a physical page.
 
 * `content` A buffer containing the new content of the page (must be the size of a physical page)
 
-### `void * `[`ptedit_pmap`](#group__PHYSICALPAGE_pmap)`(size_t physical,size_t pfn)`
+### `void * `[`ptedit_pmap`](#group__PHYSICALPAGE_pmap)`(size_t physical,size_t length)`
 
 Map a physical address range to the virtual address space.
 
