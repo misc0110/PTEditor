@@ -57,7 +57,7 @@ matrix:
         - CXXCOMPILER=g++-10
 
     - os: linux
-      dist: bionic
+      dist: focal
       arch: arm64
       sudo: required
       addons:
