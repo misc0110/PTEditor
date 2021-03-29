@@ -130,7 +130,7 @@ System Info | Descriptions
 --------------------------------|---------------------------------------------
 `void `[`ptedit_read_physical_page`](#group__PHYSICALPAGE_1gaadee01c80dcb1a6a7523d46840ef72ac)`(size_t pfn,char * buffer)`            | Retrieves the content of a physical page.
 `void `[`ptedit_write_physical_page`](#group__PHYSICALPAGE_1gab2ba740cbf618d678b61b57cd7827881)`(size_t pfn,char * content)`            | Replaces the content of a physical page.
-`void * `[`ptedit_pmap`](#group__PHYSICALPAGE_pmap)`(size_t pfn,size_t length)` | Map a physical address range to the virtual address space.
+`void * `[`ptedit_pmap`](#group__PHYSICALPAGE_pmap)`(size_t physical,size_t length)` | Map a physical address range to the virtual address space.
 
  Paging       | Descriptions
 --------------------------------|---------------------------------------------
