@@ -794,9 +794,32 @@ size_t ptedit_apply_mt(size_t entry, unsigned char mt) {
 }
 
 // ---------------------------------------------------------------------------
+size_t ptedit_apply_mt_huge(size_t entry, unsigned char mt) {
+#if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
+    entry &= ~((1ull << PTEDIT_PAGE_BIT_PWT) | (1ull << PTEDIT_PAGE_BIT_PCD) | (1ull << PTEDIT_PAGE_BIT_PAT_LARGE));
+    if (mt & 1) entry |= (1ull << PTEDIT_PAGE_BIT_PWT);
+    if (mt & 2) entry |= (1ull << PTEDIT_PAGE_BIT_PCD);
+    if (mt & 4) entry |= (1ull << PTEDIT_PAGE_BIT_PAT_LARGE);
+#elif defined(__aarch64__)
+    entry &= ~0x1c;
+    entry |= (mt & 7) << 2;
+#endif
+    return entry;
+}
+
+// ---------------------------------------------------------------------------
 unsigned char ptedit_extract_mt(size_t entry) {
 #if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
     return (!!(entry & (1ull << PTEDIT_PAGE_BIT_PWT))) | ((!!(entry & (1ull << PTEDIT_PAGE_BIT_PCD))) << 1) | ((!!(entry & (1ull << PTEDIT_PAGE_BIT_PAT))) << 2);
+#elif defined(__aarch64__)
+    return (entry >> 2) & 7;
+#endif
+}
+
+// ---------------------------------------------------------------------------
+unsigned char ptedit_extract_mt_huge(size_t entry) {
+#if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
+    return (!!(entry & (1ull << PTEDIT_PAGE_BIT_PWT))) | ((!!(entry & (1ull << PTEDIT_PAGE_BIT_PCD))) << 1) | ((!!(entry & (1ull << PTEDIT_PAGE_BIT_PAT_LARGE))) << 2);
 #elif defined(__aarch64__)
     return (entry >> 2) & 7;
 #endif
