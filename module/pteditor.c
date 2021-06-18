@@ -320,6 +320,7 @@ static int resolve_vm(size_t addr, vm_t* entry, int lock) {
   /* Map PTE (page table entry) */
   entry->pte = pte_offset_map(entry->pmd, addr);
   if (entry->pte == NULL || pmd_large(*(entry->pmd))) {
+    entry->pte = NULL;
     goto error_out;
   }
   entry->valid |= PTEDIT_VALID_MASK_PTE;
