@@ -1,3 +1,9 @@
+pteditor-dkms (0.4.3) bionic; urgency=medium
+
+  * Fixed handling of 2MB large pages
+
+ -- Michael Schwarz <michael.schwarz91@gmail.com>  Fri, 18 Jun 2021 11:34:56 +0100
+
 pteditor-dkms (0.4.2) bionic; urgency=medium
 
   * Fixes for Ubuntu 20.10
