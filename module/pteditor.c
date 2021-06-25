@@ -360,9 +360,9 @@ static int update_vm(ptedit_entry_t* new_entry, int lock) {
 
   /* Lock mm */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
-  if(lock) mmap_read_lock(mm);
+  if(lock) mmap_write_lock(mm);
 #else
-  if(lock) down_read(&mm->mmap_sem);
+  if(lock) down_write(&mm->mmap_sem);
 #endif
 
   resolve_vm(addr, &old_entry, 0);
@@ -399,9 +399,9 @@ static int update_vm(ptedit_entry_t* new_entry, int lock) {
 
   /* Unlock mm */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
-  if(lock) mmap_read_unlock(mm);
+  if(lock) mmap_write_unlock(mm);
 #else
-  if(lock) up_read(&mm->mmap_sem);
+  if(lock) up_write(&mm->mmap_sem);
 #endif
 
   return 0;
@@ -463,8 +463,10 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
             return -1;
         }
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+        mmap_write_lock(mm);
         mmap_read_lock(mm);
 #else
+        down_write(&mm->mmap_sem);
         down_read(&mm->mmap_sem);
 #endif
         mm_is_locked = true;
@@ -478,8 +480,10 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
             return -1;
         }
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
+        mmap_write_unlock(mm);
         mmap_read_unlock(mm);
 #else
+        up_write(&mm->mmap_sem);
         up_read(&mm->mmap_sem);
 #endif
         mm_is_locked = false;
@@ -530,15 +534,15 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
         mm = get_mm(paging.pid);
         if(!mm) return 1;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
-        if(!mm_is_locked) mmap_read_lock(mm);
+        if(!mm_is_locked) mmap_write_lock(mm);
 #else
-        if(!mm_is_locked) down_read(&mm->mmap_sem);
+        if(!mm_is_locked) down_write(&mm->mmap_sem);
 #endif
         mm->pgd = (pgd_t*)phys_to_virt(paging.root);
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
-        if(!mm_is_locked) mmap_read_unlock(mm);
+        if(!mm_is_locked) mmap_write_unlock(mm);
 #else
-        if(!mm_is_locked) up_read(&mm->mmap_sem);
+        if(!mm_is_locked) up_write(&mm->mmap_sem);
 #endif
         return 0;
     }
