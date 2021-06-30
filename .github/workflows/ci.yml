@@ -1,5 +1,9 @@
 name: PTEditor Test
 on: [push]
+defaults:
+  run:
+    shell: bash
+    working-directory: .
 jobs:
   test-module:
     runs-on: ubuntu-latest
