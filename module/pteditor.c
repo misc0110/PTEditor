@@ -178,8 +178,8 @@ _invalidate_tlb(void *addr) {
     cr4 = __read_cr4();
 #endif
 #if 0 && LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
-    native_write_cr4(cr4 & ~X86_CR4_PGE);
-    native_write_cr4(cr4);
+    //native_write_cr4(cr4 & ~X86_CR4_PGE);
+    //native_write_cr4(cr4);
 #else
     __write_cr4(cr4 & ~X86_CR4_PGE);
     __write_cr4(cr4);
