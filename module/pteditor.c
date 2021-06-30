@@ -101,20 +101,14 @@ static inline int pmd_large(pmd_t pmd) {
 #define pr_fmt(fmt) "[pteditor-module] " fmt
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 7, 0)
-unsigned long kallsyms_lookup_name(const char* name) {
-  struct kprobe kp = {
-    .symbol_name	= name,
-  };
+#define KPROBE_KALLSYMS_LOOKUP 1
+typedef unsigned long (*kallsyms_lookup_name_t)(const char *name);
+kallsyms_lookup_name_t kallsyms_lookup_name_func;
+#define kallsyms_lookup_name kallsyms_lookup_name_func
 
-  int ret = register_kprobe(&kp);
-  if (ret < 0) {
-    return 0;
-  };
-
-  unregister_kprobe(&kp);
-
-  return (unsigned long) kp.addr;
-}
+static struct kprobe kp = {
+    .symbol_name = "kallsyms_lookup_name"
+};
 #endif
 
 typedef struct {
@@ -646,16 +640,28 @@ static struct kretprobe probe_devmem = {.handler = devmem_bypass, .maxactive = 2
 int init_module(void) {
   int r;
 
+#ifdef KPROBE_KALLSYMS_LOOKUP
+    register_kprobe(&kp);
+    kallsyms_lookup_name = (kallsyms_lookup_name_t) kp.addr;
+    unregister_kprobe(&kp);
+
+    if(!unlikely(kallsyms_lookup_name)) {
+      pr_alert("Could not retrieve kallsyms_lookup_name address\n");
+      return -ENXIO;
+    }
+#endif
+
   /* Register device */
   r = misc_register(&misc_dev);
   if (r != 0) {
     pr_alert("Failed registering device with %d\n", r);
-    return 1;
+    return -ENXIO;
   }
 
   flush_tlb_mm_range_func = (void *) kallsyms_lookup_name("flush_tlb_mm_range");
   if(!flush_tlb_mm_range_func) {
     pr_alert("Could not retrieve flush_tlb_mm_range function\n");
+    return -ENXIO;
   }
   invalidate_tlb = invalidate_tlb_kernel;
 
