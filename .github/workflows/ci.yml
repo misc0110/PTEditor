@@ -1,13 +1,10 @@
 name: PTEditor Test
 on: [push]
-defaults:
-  run:
-    shell: bash
-    working-directory: .
 jobs:
   test-module:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
       - run: pwd
       - run: uname -a
       - run: ls -hal
