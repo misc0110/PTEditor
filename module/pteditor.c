@@ -130,6 +130,7 @@ static bool mm_is_locked = false;
 
 void (*invalidate_tlb)(unsigned long);
 void (*flush_tlb_mm_range_func)(struct mm_struct*, unsigned long, unsigned long, unsigned int, bool);
+void (*native_write_cr4_func)(unsigned long);
 static struct mm_struct* get_mm(size_t);
 
 static int device_open(struct inode *inode, struct file *file) {
@@ -177,13 +178,8 @@ _invalidate_tlb(void *addr) {
 #else
     cr4 = __read_cr4();
 #endif
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
-    native_write_cr4(cr4 & ~X86_CR4_PGE);
-    native_write_cr4(cr4);
-#else
-    __write_cr4(cr4 & ~X86_CR4_PGE);
-    __write_cr4(cr4);
-#endif
+    native_write_cr4_func(cr4 & ~X86_CR4_PGE);
+    native_write_cr4_func(cr4);
     raw_local_irq_restore(flags);
   }
 #else
@@ -664,6 +660,14 @@ int init_module(void) {
     return -ENXIO;
   }
   invalidate_tlb = invalidate_tlb_kernel;
+  
+  if (!cpu_feature_enabled(X86_FEATURE_INVPCID_SINGLE)) {
+    native_write_cr4_func = (void *) kallsyms_lookup_name("native_write_cr4");
+    if(!native_write_cr4_func) {
+        pr_alert("Could not retrieve native_write_cr4 function\n");
+        return -ENXIO;
+    }
+  }
 
 #if !defined(__aarch64__)
   probe_devmem.kp.symbol_name = devmem_hook;
