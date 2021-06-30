@@ -8,6 +8,8 @@ jobs:
   test-module:
     runs-on: ubuntu-latest
     steps:
+      - run: pwd
+      - run: uname -a
       - run: sudo apt install gcc g++ linux-headers-$(uname -r)
       - run: make && git diff --exit-code
       - run: sudo insmod module/pteditor.ko
