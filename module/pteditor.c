@@ -152,49 +152,49 @@ static int device_release(struct inode *inode, struct file *file) {
 
 static void
 _invalidate_tlb(void *addr) {
-#if defined(__i386__) || defined(__x86_64__)
-  int pcid;
-  unsigned long flags;
-  unsigned long cr4;
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 2, 98)
-#if defined(X86_FEATURE_INVPCID_SINGLE) && defined(INVPCID_TYPE_INDIV_ADDR)
-  if (cpu_feature_enabled(X86_FEATURE_INVPCID_SINGLE)) {
-    for(pcid = 0; pcid < 4096; pcid++) {
-      invpcid_flush_one(pcid, (long unsigned int) addr);
-    }
-  } 
-  else 
-#endif
-  {
-    raw_local_irq_save(flags);
-#if 0 && LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 0, 0)
-    cr4 = native_read_cr4();
-#else
-    cr4 = this_cpu_read(cpu_tlbstate.cr4);
-#endif
-#else
-    cr4 = __read_cr4();
-#endif
-#if 0 && LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
-    //native_write_cr4(cr4 & ~X86_CR4_PGE);
-    //native_write_cr4(cr4);
-#else
-    __write_cr4(cr4 & ~X86_CR4_PGE);
-    __write_cr4(cr4);
-#endif
-    raw_local_irq_restore(flags);
-  }
-#else
-  asm volatile ("invlpg (%0)": : "r"(addr));
-#endif
-#elif defined(__aarch64__)
-  asm volatile ("dsb ishst");
-  asm volatile ("tlbi vmalle1is");
-  asm volatile ("dsb ish");
-  asm volatile ("isb");
-#endif
+// #if defined(__i386__) || defined(__x86_64__)
+//   int pcid;
+//   unsigned long flags;
+//   unsigned long cr4;
+// 
+// #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 2, 98)
+// #if defined(X86_FEATURE_INVPCID_SINGLE) && defined(INVPCID_TYPE_INDIV_ADDR)
+//   if (cpu_feature_enabled(X86_FEATURE_INVPCID_SINGLE)) {
+//     for(pcid = 0; pcid < 4096; pcid++) {
+//       invpcid_flush_one(pcid, (long unsigned int) addr);
+//     }
+//   } 
+//   else 
+// #endif
+//   {
+//     raw_local_irq_save(flags);
+// #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
+// #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 0, 0)
+//     cr4 = native_read_cr4();
+// #else
+//     cr4 = this_cpu_read(cpu_tlbstate.cr4);
+// #endif
+// #else
+//     cr4 = __read_cr4();
+// #endif
+// #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
+//     native_write_cr4(cr4 & ~X86_CR4_PGE);
+//     native_write_cr4(cr4);
+// #else
+//     __write_cr4(cr4 & ~X86_CR4_PGE);
+//     __write_cr4(cr4);
+// #endif
+//     raw_local_irq_restore(flags);
+//   }
+// #else
+//   asm volatile ("invlpg (%0)": : "r"(addr));
+// #endif
+// #elif defined(__aarch64__)
+//   asm volatile ("dsb ishst");
+//   asm volatile ("tlbi vmalle1is");
+//   asm volatile ("dsb ish");
+//   asm volatile ("isb");
+// #endif
 }
 
 static void
