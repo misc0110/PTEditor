@@ -1,0 +1,10 @@
+name: PTEditor Test
+on: [push]
+jobs:
+  test-module:
+    runs-on: ubuntu-latest
+    steps:
+      - run: sudo apt install gcc g++ linux-headers-$(uname -r)
+      - run: make && git diff --exit-code
+      - run: sudo insmod module/pteditor.ko
+      - run: ./test/tests
