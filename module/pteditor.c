@@ -130,6 +130,7 @@ static bool mm_is_locked = false;
 
 void (*invalidate_tlb)(unsigned long);
 void (*flush_tlb_mm_range_func)(struct mm_struct*, unsigned long, unsigned long, unsigned int, bool);
+void (*native_write_cr4_func)(unsigned long);
 static struct mm_struct* get_mm(size_t);
 
 static int device_open(struct inode *inode, struct file *file) {
@@ -152,49 +153,44 @@ static int device_release(struct inode *inode, struct file *file) {
 
 static void
 _invalidate_tlb(void *addr) {
-// #if defined(__i386__) || defined(__x86_64__)
-//   int pcid;
-//   unsigned long flags;
-//   unsigned long cr4;
-// 
-// #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 2, 98)
-// #if defined(X86_FEATURE_INVPCID_SINGLE) && defined(INVPCID_TYPE_INDIV_ADDR)
-//   if (cpu_feature_enabled(X86_FEATURE_INVPCID_SINGLE)) {
-//     for(pcid = 0; pcid < 4096; pcid++) {
-//       invpcid_flush_one(pcid, (long unsigned int) addr);
-//     }
-//   } 
-//   else 
-// #endif
-//   {
-//     raw_local_irq_save(flags);
-// #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
-// #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 0, 0)
-//     cr4 = native_read_cr4();
-// #else
-//     cr4 = this_cpu_read(cpu_tlbstate.cr4);
-// #endif
-// #else
-//     cr4 = __read_cr4();
-// #endif
-// #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
-//     native_write_cr4(cr4 & ~X86_CR4_PGE);
-//     native_write_cr4(cr4);
-// #else
-//     __write_cr4(cr4 & ~X86_CR4_PGE);
-//     __write_cr4(cr4);
-// #endif
-//     raw_local_irq_restore(flags);
-//   }
-// #else
-//   asm volatile ("invlpg (%0)": : "r"(addr));
-// #endif
-// #elif defined(__aarch64__)
-//   asm volatile ("dsb ishst");
-//   asm volatile ("tlbi vmalle1is");
-//   asm volatile ("dsb ish");
-//   asm volatile ("isb");
-// #endif
+#if defined(__i386__) || defined(__x86_64__)
+  int pcid;
+  unsigned long flags;
+  unsigned long cr4;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 2, 98)
+#if defined(X86_FEATURE_INVPCID_SINGLE) && defined(INVPCID_TYPE_INDIV_ADDR)
+  if (cpu_feature_enabled(X86_FEATURE_INVPCID_SINGLE)) {
+    for(pcid = 0; pcid < 4096; pcid++) {
+      invpcid_flush_one(pcid, (long unsigned int) addr);
+    }
+  } 
+  else 
+#endif
+  {
+    raw_local_irq_save(flags);
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 0, 0)
+    cr4 = native_read_cr4();
+#else
+    cr4 = this_cpu_read(cpu_tlbstate.cr4);
+#endif
+#else
+    cr4 = __read_cr4();
+#endif
+    native_write_cr4_func(cr4 & ~X86_CR4_PGE);
+    native_write_cr4_func(cr4);
+    raw_local_irq_restore(flags);
+  }
+#else
+  asm volatile ("invlpg (%0)": : "r"(addr));
+#endif
+#elif defined(__aarch64__)
+  asm volatile ("dsb ishst");
+  asm volatile ("tlbi vmalle1is");
+  asm volatile ("dsb ish");
+  asm volatile ("isb");
+#endif
 }
 
 static void
@@ -664,6 +660,14 @@ int init_module(void) {
     return -ENXIO;
   }
   invalidate_tlb = invalidate_tlb_kernel;
+  
+  if (!cpu_feature_enabled(X86_FEATURE_INVPCID_SINGLE)) {
+    native_write_cr4_func = (void *) kallsyms_lookup_name("native_write_cr4");
+    if(!native_write_cr4_func) {
+        pr_alert("Could not retrieve native_write_cr4 function\n");
+        return -ENXIO;
+    }
+  }
 
 #if !defined(__aarch64__)
   probe_devmem.kp.symbol_name = devmem_hook;
