@@ -1,8 +1,19 @@
 name: PTEditor Test
 on: [push]
 jobs:
-  test-module:
+  test-module-latest:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: pwd
+      - run: uname -a
+      - run: ls -hal
+      - run: sudo apt install gcc g++ linux-headers-$(uname -r)
+      - run: make && git diff --exit-code
+      - run: sudo insmod module/pteditor.ko
+      - run: ./test/tests
+  test-module-1804:
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v2
       - run: pwd
