@@ -198,9 +198,32 @@ invalidate_tlb_custom(unsigned long addr) {
   on_each_cpu(_invalidate_tlb, (void*) addr, 1);
 }
 
+#if defined(__aarch64__)
+typedef struct tlb_page_s {
+  struct vm_area_struct* vma;
+  unsigned long addr;
+} tlb_page_t;
+
+void _flush_tlb_page_smp(void* info) {
+  tlb_page_t* tlb_page = (tlb_page_t*) info;
+  flush_tlb_page(tlb_page->vma, tlb_page->addr);
+}
+#endif
+
 static void
 invalidate_tlb_kernel(unsigned long addr) {
+#if defined(__i386__) || defined(__x86_64__)
   flush_tlb_mm_range_func(get_mm(task_pid_nr(current)), addr, addr + PAGE_SIZE, PAGE_SHIFT, false);
+#elif defined(__aarch64__)
+  struct vm_area_struct *vma = find_vma(current->mm, addr);
+  tlb_page_t tlb_page;
+  if (vma == NULL || addr >= vma->vm_end) {
+    return;
+  }
+  tlb_page.vma = vma;
+  tlb_page.addr = addr;
+  on_each_cpu(_flush_tlb_page_smp, &tlb_page, 1);
+#endif
 }
 
 static void _set_pat(void* _pat) {
@@ -654,11 +677,13 @@ int init_module(void) {
     return -ENXIO;
   }
 
+#if defined(__i386__) || defined(__x86_64__)
   flush_tlb_mm_range_func = (void *) kallsyms_lookup_name("flush_tlb_mm_range");
   if(!flush_tlb_mm_range_func) {
     pr_alert("Could not retrieve flush_tlb_mm_range function\n");
     return -ENXIO;
   }
+#endif
   invalidate_tlb = invalidate_tlb_kernel;
   
 #if defined(__i386__) || defined(__x86_64__)
