@@ -217,7 +217,7 @@ invalidate_tlb_kernel(unsigned long addr) {
 #elif defined(__aarch64__)
   struct vm_area_struct *vma = find_vma(current->mm, addr);
   tlb_page_t tlb_page;
-  if (vma == NULL || addr >= vma->vm_end) {
+  if (unlikely(vma == NULL || addr < vma->vm_start)) {
     return;
   }
   tlb_page.vma = vma;
