@@ -3,6 +3,8 @@
 #ifndef _PTEDITOR_H_
 #define _PTEDITOR_H_
 
+#define ptedit_fnc
+
 #include "module/pteditor.h"
 #include <sys/types.h>
 
@@ -180,13 +182,13 @@ typedef size_t pid_t;
   * @return 0 Initialization was successful
   * @return -1 Initialization failed
   */
-int ptedit_init();
+ptedit_fnc int ptedit_init();
 
 /**
  * Releases PTEditor kernel module
  *
  */
-void ptedit_cleanup();
+ptedit_fnc void ptedit_cleanup();
 
 /**
  * Switch between kernel and user-space implementation
@@ -194,7 +196,7 @@ void ptedit_cleanup();
  * @param[in] implementation The implementation to use, either PTEDIT_IMPL_KERNEL, PTEDIT_IMPL_USER, or PTEDIT_IMPL_USER_PREAD
  *
  */
-void ptedit_use_implementation(int implementation);
+ptedit_fnc void ptedit_use_implementation(int implementation);
 
 /** @} */
 
@@ -221,7 +223,7 @@ typedef void (*ptedit_update_t)(void*, pid_t, ptedit_entry_t*);
  *
  * @return A structure containing the page-table entries of all levels.
  */
-ptedit_resolve_t ptedit_resolve;
+ptedit_fnc ptedit_resolve_t ptedit_resolve;
 
 /**
  * Updates one or more page-table entries for a virtual address of a given process.
@@ -232,7 +234,7 @@ ptedit_resolve_t ptedit_resolve;
  * @param[in] vm A structure containing the values for the page-table entries and a bitmask indicating which entries to update
  *
  */
-ptedit_update_t ptedit_update;
+ptedit_fnc ptedit_update_t ptedit_update;
 
 /**
  * Sets a bit directly in the PTE of an address.
@@ -242,7 +244,7 @@ ptedit_update_t ptedit_update;
  * @param[in] bit The bit to set (one of PTEDIT_PAGE_BIT_*)
  *
  */
-void ptedit_pte_set_bit(void* address, pid_t pid, int bit);
+ptedit_fnc void ptedit_pte_set_bit(void* address, pid_t pid, int bit);
 
 /**
  * Clears a bit directly in the PTE of an address.
@@ -252,7 +254,7 @@ void ptedit_pte_set_bit(void* address, pid_t pid, int bit);
  * @param[in] bit The bit to clear (one of PTEDIT_PAGE_BIT_*)
  *
  */
-void ptedit_pte_clear_bit(void* address, pid_t pid, int bit);
+ptedit_fnc void ptedit_pte_clear_bit(void* address, pid_t pid, int bit);
 
 /**
  * Returns the value of a bit directly from the PTE of an address.
@@ -264,7 +266,7 @@ void ptedit_pte_clear_bit(void* address, pid_t pid, int bit);
  * @return The value of the bit (0 or 1)
  *
  */
-unsigned char ptedit_pte_get_bit(void* address, pid_t pid, int bit);
+ptedit_fnc unsigned char ptedit_pte_get_bit(void* address, pid_t pid, int bit);
 
 /**
  * Reads the PFN directly from the PTE of an address.
@@ -275,7 +277,7 @@ unsigned char ptedit_pte_get_bit(void* address, pid_t pid, int bit);
  * @return The page-frame number (PFN)
  *
  */
-size_t ptedit_pte_get_pfn(void* address, pid_t pid);
+ptedit_fnc size_t ptedit_pte_get_pfn(void* address, pid_t pid);
 
 /**
  * Sets the PFN directly in the PTE of an address.
@@ -285,7 +287,7 @@ size_t ptedit_pte_get_pfn(void* address, pid_t pid);
  * @param[in] pfn The new page-frame number (PFN)
  *
  */
-void ptedit_pte_set_pfn(void* address, pid_t pid, size_t pfn);
+ptedit_fnc void ptedit_pte_set_pfn(void* address, pid_t pid, size_t pfn);
 
 
 #if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
@@ -507,7 +509,7 @@ typedef struct {
    *
    * @return Page size of the system in bytes
    */
-int ptedit_get_pagesize();
+ptedit_fnc int ptedit_get_pagesize();
 
 /** @} */
 
@@ -529,7 +531,7 @@ int ptedit_get_pagesize();
   *
   * @return A new page-table entry with the given page-frame number
   */
-size_t ptedit_set_pfn(size_t entry, size_t pfn);
+ptedit_fnc size_t ptedit_set_pfn(size_t entry, size_t pfn);
 
 /**
  * Returns the page-frame number (PFN) of a page-table entry.
@@ -538,7 +540,7 @@ size_t ptedit_set_pfn(size_t entry, size_t pfn);
  *
  * @return The page-frame number
  */
-size_t ptedit_get_pfn(size_t entry);
+ptedit_fnc size_t ptedit_get_pfn(size_t entry);
 
 /** @} */
 
@@ -560,7 +562,7 @@ size_t ptedit_get_pfn(size_t entry);
   * @param[out] buffer A buffer which is large enough to hold the content of the page
   *
   */
-void ptedit_read_physical_page(size_t pfn, char* buffer);
+ptedit_fnc void ptedit_read_physical_page(size_t pfn, char* buffer);
 
 /**
  * Replaces the content of a physical page.
@@ -569,7 +571,7 @@ void ptedit_read_physical_page(size_t pfn, char* buffer);
  * @param[in] content A buffer containing the new content of the page (must be the size of a physical page)
  *
  */
-void ptedit_write_physical_page(size_t pfn, char* content);
+ptedit_fnc void ptedit_write_physical_page(size_t pfn, char* content);
 
 /**
  * Map a physical address range.
@@ -579,7 +581,7 @@ void ptedit_write_physical_page(size_t pfn, char* content);
  *
  * @return A virtual address that can be used to access the physical range
  */
-void* ptedit_pmap(size_t physical, size_t length);
+ptedit_fnc void* ptedit_pmap(size_t physical, size_t length);
 
 /** @} */
 
@@ -602,7 +604,7 @@ void* ptedit_pmap(size_t physical, size_t length);
   * @return The phyiscal address (not PFN!) of the first page table (i.e., the PGD)
   *
   */
-size_t ptedit_get_paging_root(pid_t pid);
+ptedit_fnc size_t ptedit_get_paging_root(pid_t pid);
 
 /**
  * Sets the root of the paging structure (i.e., CR3 on x86 and TTBR0 on ARM).
@@ -611,7 +613,7 @@ size_t ptedit_get_paging_root(pid_t pid);
  * @param[in] root The physical address (not PFN!) of the first page table (i.e., the PGD)
  *
  */
-void ptedit_set_paging_root(pid_t pid, size_t root);
+ptedit_fnc void ptedit_set_paging_root(pid_t pid, size_t root);
 
 /** @} */
 
@@ -630,7 +632,7 @@ void ptedit_set_paging_root(pid_t pid, size_t root);
   * @param[in] address The address to invalidate
   *
   */
-void ptedit_invalidate_tlb(void* address);
+ptedit_fnc void ptedit_invalidate_tlb(void* address);
 
  /**
   * Change the method used for flushing the TLB (either kernel or custom function)
@@ -639,13 +641,13 @@ void ptedit_invalidate_tlb(void* address);
   *
   * @return 0 on success, -1 on failure
   */
-int ptedit_switch_tlb_invalidation(int implementation);
+ptedit_fnc int ptedit_switch_tlb_invalidation(int implementation);
 
 /**
  * A full serializing barrier which stops everything.
  *
  */
-void ptedit_full_serializing_barrier();
+ptedit_fnc void ptedit_full_serializing_barrier();
 
 /** @} */
 
@@ -665,7 +667,7 @@ void ptedit_full_serializing_barrier();
   * @return The memory types in the same format as in the IA32_PAT MSR / MAIR_EL1
   *
   */
-size_t ptedit_get_mts();
+ptedit_fnc size_t ptedit_get_mts();
 
 /**
  * Programs the value of all memory types (x86 PATs / ARM MAIRs). This is equivalent to writing to the MSR 0x277 (x86) / MAIR_EL1 (ARM) on all CPUs.
@@ -673,7 +675,7 @@ size_t ptedit_get_mts();
  * @param[in] mts The memory types in the same format as in the IA32_PAT MSR / MAIR_EL1
  *
  */
-void ptedit_set_mts(size_t mts);
+ptedit_fnc void ptedit_set_mts(size_t mts);
 
 /**
  * Reads the value of a specific memory type attribute (PAT/MAIR).
@@ -683,7 +685,7 @@ void ptedit_set_mts(size_t mts);
  * @return The PAT/MAIR value (can be one of PTEDIT_MT_*)
  *
  */
-char ptedit_get_mt(unsigned char mt);
+ptedit_fnc char ptedit_get_mt(unsigned char mt);
 
 /**
  * Programs the value of a specific memory type attribute (PAT/MAIR).
@@ -692,7 +694,7 @@ char ptedit_get_mt(unsigned char mt);
  * @param[in] value The PAT/MAIR value (can be one of PTEDIT_MT_*)
  *
  */
-void ptedit_set_mt(unsigned char mt, unsigned char value);
+ptedit_fnc void ptedit_set_mt(unsigned char mt, unsigned char value);
 
 /**
  * Generates a bitmask of all memory type attributes (PAT/MAIR) which are programmed to the given value.
@@ -702,7 +704,7 @@ void ptedit_set_mt(unsigned char mt, unsigned char value);
  * @return A bitmask where a set bit indicates that the corresponding PAT/MAIR has the given type
  *
  */
-unsigned char ptedit_find_mt(unsigned char type);
+ptedit_fnc unsigned char ptedit_find_mt(unsigned char type);
 
 /**
  * Returns the first memory type attribute (PAT/MAIR) which is programmed to the given memory type.
@@ -712,7 +714,7 @@ unsigned char ptedit_find_mt(unsigned char type);
  * @return A PAT/MAIR ID, or -1 if no PAT/MAIR of this type was found
  *
  */
-int ptedit_find_first_mt(unsigned char type);
+ptedit_fnc int ptedit_find_first_mt(unsigned char type);
 
 /**
  * Returns a new page-table entry which uses the given memory type (PAT/MAIR).
@@ -723,7 +725,7 @@ int ptedit_find_first_mt(unsigned char type);
  * @return A new page-table entry with the given memory type (PAT/MAIR)
  *
  */
-size_t ptedit_apply_mt(size_t entry, unsigned char mt);
+ptedit_fnc size_t ptedit_apply_mt(size_t entry, unsigned char mt);
 
 /**
  * Returns the memory type (i.e., PAT/MAIR ID) which is used by a page-table entry.
@@ -733,7 +735,7 @@ size_t ptedit_apply_mt(size_t entry, unsigned char mt);
  * @return A PAT/MAIR ID (between 0 and 7)
  *
  */
-unsigned char ptedit_extract_mt(size_t entry);
+ptedit_fnc unsigned char ptedit_extract_mt(size_t entry);
 
 /**
  * Returns a human-readable representation of a memory type (PAT/MAIR value).
@@ -743,7 +745,7 @@ unsigned char ptedit_extract_mt(size_t entry);
  * @return A human-readable representation of the memory type
  *
  */
-const char* ptedit_mt_to_string(unsigned char mt);
+ptedit_fnc const char* ptedit_mt_to_string(unsigned char mt);
 
 /** @} */
 
@@ -763,7 +765,7 @@ const char* ptedit_mt_to_string(unsigned char mt);
   * @param[in] entry A ptedit_entry_t struct
   *
   */
-void ptedit_print_entry_t(ptedit_entry_t entry);
+ptedit_fnc void ptedit_print_entry_t(ptedit_entry_t entry);
 
 /**
  * Pretty prints a page-table entry.
@@ -771,7 +773,7 @@ void ptedit_print_entry_t(ptedit_entry_t entry);
  * @param[in] entry A page-table entry
  *
  */
-void ptedit_print_entry(size_t entry);
+ptedit_fnc void ptedit_print_entry(size_t entry);
 
 /**
  * Prints a single line of the pretty-print representation of a page-table entry.
@@ -780,7 +782,7 @@ void ptedit_print_entry(size_t entry);
  * @param[in] line The line to print (0 to 3)
  *
  */
-void ptedit_print_entry_line(size_t entry, int line);
+ptedit_fnc void ptedit_print_entry_line(size_t entry, int line);
 
 /** @} */
 

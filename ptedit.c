@@ -44,10 +44,8 @@ typedef struct {
 
 ptedit_paging_definition_t ptedit_paging_definition;
 
-
-
 // ---------------------------------------------------------------------------
-ptedit_entry_t ptedit_resolve_kernel(void* address, pid_t pid) {
+ptedit_fnc ptedit_entry_t ptedit_resolve_kernel(void* address, pid_t pid) {
     ptedit_entry_t vm;
     memset(&vm, 0, sizeof(vm));
     vm.vaddr = (size_t)address;
@@ -216,7 +214,7 @@ static ptedit_entry_t ptedit_resolve_user_map(void* address, pid_t pid) {
 
 
 // ---------------------------------------------------------------------------
-void ptedit_update_kernel(void* address, pid_t pid, ptedit_entry_t* vm) {
+ptedit_fnc void ptedit_update_kernel(void* address, pid_t pid, ptedit_entry_t* vm) {
     vm->vaddr = (size_t)address;
     vm->pid = (size_t)pid;
 #if defined(LINUX)
@@ -227,7 +225,7 @@ void ptedit_update_kernel(void* address, pid_t pid, ptedit_entry_t* vm) {
 }
 
 // ---------------------------------------------------------------------------
-void ptedit_update_user_ext(void* address, pid_t pid, ptedit_entry_t* vm, ptedit_phys_write_t pset) {
+ptedit_fnc void ptedit_update_user_ext(void* address, pid_t pid, ptedit_entry_t* vm, ptedit_phys_write_t pset) {
     ptedit_entry_t current = ptedit_resolve(address, pid);
     size_t root = (pid == 0) ? ptedit_paging_root : ptedit_get_paging_root(pid);
 
@@ -284,7 +282,7 @@ static void ptedit_update_user_map(void* address, pid_t pid, ptedit_entry_t* vm)
 }
 
 // ---------------------------------------------------------------------------
-void* ptedit_pmap(size_t physical, size_t length) {
+ptedit_fnc void* ptedit_pmap(size_t physical, size_t length) {
 #if defined(LINUX)
     char* m = (char*)mmap(0, length + (physical % ptedit_pagesize), PROT_READ | PROT_WRITE, MAP_SHARED, ptedit_umem, ((size_t)(physical / ptedit_pagesize)) * ptedit_pagesize);
     return m + (physical % ptedit_pagesize);
@@ -295,7 +293,7 @@ void* ptedit_pmap(size_t physical, size_t length) {
 }
 
 // ---------------------------------------------------------------------------
-size_t ptedit_set_pfn(size_t pte, size_t pfn) {
+ptedit_fnc size_t ptedit_set_pfn(size_t pte, size_t pfn) {
 #if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
     pte &= ~(((1ull << 40) - 1) << 12);
 #elif defined(__aarch64__)
@@ -307,7 +305,7 @@ size_t ptedit_set_pfn(size_t pte, size_t pfn) {
 
 
 // ---------------------------------------------------------------------------
-size_t ptedit_get_pfn(size_t pte) {
+ptedit_fnc size_t ptedit_get_pfn(size_t pte) {
 #if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
     return (pte & (((1ull << 40) - 1) << 12)) >> 12;
 #elif defined(__aarch64__)
@@ -331,7 +329,7 @@ size_t ptedit_get_pfn(size_t pte) {
 
 
 // ---------------------------------------------------------------------------
-void ptedit_print_entry_line(size_t entry, int line) {
+ptedit_fnc void ptedit_print_entry_line(size_t entry, int line) {
 #if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
     if (line == 0 || line == 3) printf("+--+------------------+-+-+-+-+-+-+-+-+--+--+-+-+-+\n");
     if (line == 1) printf("|NX|       PFN        |H|?|?|?|G|S|D|A|UC|WT|U|W|P|\n");
@@ -384,7 +382,7 @@ void ptedit_print_entry_line(size_t entry, int line) {
 
 
 // ---------------------------------------------------------------------------
-void ptedit_print_entry(size_t entry) {
+ptedit_fnc void ptedit_print_entry(size_t entry) {
     int i = 0;
     for (i = 0; i < 4; i++) {
         ptedit_print_entry_line(entry, i);
@@ -392,7 +390,7 @@ void ptedit_print_entry(size_t entry) {
 }
 
 // ---------------------------------------------------------------------------
-void ptedit_print_entry_t(ptedit_entry_t entry) {
+ptedit_fnc void ptedit_print_entry_t(ptedit_entry_t entry) {
     if (entry.valid & PTEDIT_VALID_MASK_PGD) {
         printf("PGD of address\n");
         ptedit_print_entry(entry.pgd);
@@ -416,7 +414,7 @@ void ptedit_print_entry_t(ptedit_entry_t entry) {
 }
 
 // ---------------------------------------------------------------------------
-int ptedit_init() {
+ptedit_fnc int ptedit_init() {
 #if defined(LINUX)
     ptedit_fd = open(PTEDITOR_DEVICE_PATH, O_RDONLY);
     if (ptedit_fd < 0) {
@@ -474,7 +472,7 @@ int ptedit_init() {
 
 
 // ---------------------------------------------------------------------------
-void ptedit_cleanup() {
+ptedit_fnc void ptedit_cleanup() {
 #if defined(LINUX)
     if (ptedit_fd >= 0) {
         close(ptedit_fd);
@@ -489,7 +487,7 @@ void ptedit_cleanup() {
 
 
 // ---------------------------------------------------------------------------
-void ptedit_use_implementation(int implementation) {
+ptedit_fnc void ptedit_use_implementation(int implementation) {
     if (implementation == PTEDIT_IMPL_KERNEL) {
 #if defined(LINUX)
         ptedit_resolve = ptedit_resolve_kernel;
@@ -523,7 +521,7 @@ void ptedit_use_implementation(int implementation) {
 
 
 // ---------------------------------------------------------------------------
-int ptedit_get_pagesize() {
+ptedit_fnc int ptedit_get_pagesize() {
 #if defined(LINUX)
     return (int)ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_GET_PAGESIZE, 0);
 #else
@@ -535,7 +533,7 @@ int ptedit_get_pagesize() {
 
 
 // ---------------------------------------------------------------------------
-void ptedit_read_physical_page(size_t pfn, char* buffer) {
+ptedit_fnc void ptedit_read_physical_page(size_t pfn, char* buffer) {
 #if defined(LINUX)
     if (ptedit_umem > 0) {
         if (pread(ptedit_umem, buffer, ptedit_pagesize, pfn * ptedit_pagesize) == -1) {
@@ -557,7 +555,7 @@ void ptedit_read_physical_page(size_t pfn, char* buffer) {
 
 
 // ---------------------------------------------------------------------------
-void ptedit_write_physical_page(size_t pfn, char* content) {
+ptedit_fnc void ptedit_write_physical_page(size_t pfn, char* content) {
 #if defined(LINUX)
     if (ptedit_umem > 0) {
         if (pwrite(ptedit_umem, content, ptedit_pagesize, pfn * ptedit_pagesize) == -1) {
@@ -585,7 +583,7 @@ void ptedit_write_physical_page(size_t pfn, char* content) {
 
 
 // ---------------------------------------------------------------------------
-size_t ptedit_get_paging_root(pid_t pid) {
+ptedit_fnc size_t ptedit_get_paging_root(pid_t pid) {
 #if defined(LINUX)
     ptedit_paging_t cr3;
     cr3.pid = (size_t)pid;
@@ -603,7 +601,7 @@ size_t ptedit_get_paging_root(pid_t pid) {
 
 
 // ---------------------------------------------------------------------------
-void ptedit_set_paging_root(pid_t pid, size_t root) {
+ptedit_fnc void ptedit_set_paging_root(pid_t pid, size_t root) {
     ptedit_paging_t cr3;
     cr3.pid = (size_t)pid;
     cr3.root = root; 
@@ -621,7 +619,7 @@ void ptedit_set_paging_root(pid_t pid, size_t root) {
 
 
 // ---------------------------------------------------------------------------
-void ptedit_invalidate_tlb(void* address) {
+ptedit_fnc void ptedit_invalidate_tlb(void* address) {
 #if defined(LINUX)
     ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_INVALIDATE_TLB, (size_t)address);
 #else
@@ -632,7 +630,7 @@ void ptedit_invalidate_tlb(void* address) {
 }
 
 // ---------------------------------------------------------------------------
-int ptedit_switch_tlb_invalidation(int implementation) {
+ptedit_fnc int ptedit_switch_tlb_invalidation(int implementation) {
 #if defined(LINUX)
     return (int) ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_SWITCH_TLB_INVALIDATION, (size_t) implementation);
 #else
@@ -642,7 +640,7 @@ int ptedit_switch_tlb_invalidation(int implementation) {
 
 
 // ---------------------------------------------------------------------------
-size_t ptedit_get_mts() {
+ptedit_fnc size_t ptedit_get_mts() {
     size_t mt = 0;
 #if defined(LINUX)
     ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_GET_PAT, (size_t)&mt);
@@ -655,7 +653,7 @@ size_t ptedit_get_mts() {
 
 
 // ---------------------------------------------------------------------------
-char ptedit_get_mt(unsigned char mt) {
+ptedit_fnc char ptedit_get_mt(unsigned char mt) {
     size_t mts = ptedit_get_mts();
 #if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
     return ((mts >> (mt * 8)) & 7);
@@ -666,7 +664,7 @@ char ptedit_get_mt(unsigned char mt) {
 
 
 // ---------------------------------------------------------------------------
-const char* ptedit_mt_to_string(unsigned char mt) {
+ptedit_fnc const char* ptedit_mt_to_string(unsigned char mt) {
 #if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
     const char* mts[] = { "UC", "WC", "Rsvd", "Rsvd", "WT", "WP", "WB", "UC-", "Rsvd" };
     if (mt <= 7) return mts[mt];
@@ -714,7 +712,7 @@ const char* ptedit_mt_to_string(unsigned char mt) {
 
 
 // ---------------------------------------------------------------------------
-void ptedit_set_mts(size_t mts) {
+ptedit_fnc void ptedit_set_mts(size_t mts) {
 #if defined(LINUX)
     ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_SET_PAT, mts);
 #else
@@ -725,7 +723,7 @@ void ptedit_set_mts(size_t mts) {
 
 
 // ---------------------------------------------------------------------------
-void ptedit_set_mt(unsigned char mt, unsigned char value) {
+ptedit_fnc void ptedit_set_mt(unsigned char mt, unsigned char value) {
     size_t mts = ptedit_get_mts();
 #if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
     mts &= ~(7 << (mt * 8));
@@ -738,7 +736,7 @@ void ptedit_set_mt(unsigned char mt, unsigned char value) {
 
 
 // ---------------------------------------------------------------------------
-unsigned char ptedit_find_mt(unsigned char type) {
+ptedit_fnc unsigned char ptedit_find_mt(unsigned char type) {
     size_t mts = ptedit_get_mts();
     unsigned char found = 0;
     int i;
@@ -764,7 +762,7 @@ unsigned char ptedit_find_mt(unsigned char type) {
 
 
 // ---------------------------------------------------------------------------
-int ptedit_find_first_mt(unsigned char type) {
+ptedit_fnc int ptedit_find_first_mt(unsigned char type) {
 #if defined(LINUX)
     return __builtin_ffs(ptedit_find_mt(type)) - 1;
 #else
@@ -780,7 +778,7 @@ int ptedit_find_first_mt(unsigned char type) {
 
 
 // ---------------------------------------------------------------------------
-size_t ptedit_apply_mt(size_t entry, unsigned char mt) {
+ptedit_fnc size_t ptedit_apply_mt(size_t entry, unsigned char mt) {
 #if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
     entry &= ~((1ull << PTEDIT_PAGE_BIT_PWT) | (1ull << PTEDIT_PAGE_BIT_PCD) | (1ull << PTEDIT_PAGE_BIT_PAT));
     if (mt & 1) entry |= (1ull << PTEDIT_PAGE_BIT_PWT);
@@ -794,7 +792,7 @@ size_t ptedit_apply_mt(size_t entry, unsigned char mt) {
 }
 
 // ---------------------------------------------------------------------------
-unsigned char ptedit_extract_mt(size_t entry) {
+ptedit_fnc unsigned char ptedit_extract_mt(size_t entry) {
 #if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
     return (!!(entry & (1ull << PTEDIT_PAGE_BIT_PWT))) | ((!!(entry & (1ull << PTEDIT_PAGE_BIT_PCD))) << 1) | ((!!(entry & (1ull << PTEDIT_PAGE_BIT_PAT))) << 2);
 #elif defined(__aarch64__)
@@ -803,7 +801,7 @@ unsigned char ptedit_extract_mt(size_t entry) {
 }
 
 // ---------------------------------------------------------------------------
-void ptedit_full_serializing_barrier() {
+ptedit_fnc void ptedit_full_serializing_barrier() {
 #if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
 #if defined(LINUX)
     asm volatile("mfence\nlfence\n" ::: "memory");
@@ -831,7 +829,7 @@ void ptedit_full_serializing_barrier() {
 
 
 // ---------------------------------------------------------------------------
-void ptedit_pte_set_bit(void* address, pid_t pid, int bit) {
+ptedit_fnc void ptedit_pte_set_bit(void* address, pid_t pid, int bit) {
     ptedit_entry_t vm = ptedit_resolve(address, pid);
     if (!(vm.valid & PTEDIT_VALID_MASK_PTE)) return;
     vm.pte |= (1ull << bit);
@@ -840,7 +838,7 @@ void ptedit_pte_set_bit(void* address, pid_t pid, int bit) {
 }
 
 // ---------------------------------------------------------------------------
-void ptedit_pte_clear_bit(void* address, pid_t pid, int bit) {
+ptedit_fnc void ptedit_pte_clear_bit(void* address, pid_t pid, int bit) {
     ptedit_entry_t vm = ptedit_resolve(address, pid);
     if (!(vm.valid & PTEDIT_VALID_MASK_PTE)) return;
     vm.pte &= ~(1ull << bit);
@@ -849,20 +847,20 @@ void ptedit_pte_clear_bit(void* address, pid_t pid, int bit) {
 }
 
 // ---------------------------------------------------------------------------
-unsigned char ptedit_pte_get_bit(void* address, pid_t pid, int bit) {
+ptedit_fnc unsigned char ptedit_pte_get_bit(void* address, pid_t pid, int bit) {
     ptedit_entry_t vm = ptedit_resolve(address, pid);
     return !!(vm.pte & (1ull << bit));
 }
 
 // ---------------------------------------------------------------------------
-size_t ptedit_pte_get_pfn(void* address, pid_t pid) {
+ptedit_fnc size_t ptedit_pte_get_pfn(void* address, pid_t pid) {
     ptedit_entry_t vm = ptedit_resolve(address, pid);
     if (!(vm.valid & PTEDIT_VALID_MASK_PTE)) return 0;
     else return ptedit_get_pfn(vm.pte);
 }
 
 // ---------------------------------------------------------------------------
-void ptedit_pte_set_pfn(void* address, pid_t pid, size_t pfn) {
+ptedit_fnc void ptedit_pte_set_pfn(void* address, pid_t pid, size_t pfn) {
     ptedit_entry_t vm = ptedit_resolve(address, pid);
     if (!(vm.valid & PTEDIT_VALID_MASK_PTE)) return;
     vm.pte = ptedit_set_pfn(vm.pte, pfn);
