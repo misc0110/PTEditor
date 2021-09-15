@@ -656,7 +656,7 @@ static int devmem_bypass(struct kretprobe_instance *p, struct pt_regs *regs) {
 static struct kretprobe probe_devmem = {.handler = devmem_bypass, .maxactive = 20};
 #endif
 
-int init_module(void) {
+static int __init pteditor_init(void) {
   int r;
 
 #ifdef KPROBE_KALLSYMS_LOOKUP
@@ -725,7 +725,7 @@ int init_module(void) {
   return 0;
 }
 
-void cleanup_module(void) {
+static void __exit pteditor_exit(void) {
   misc_deregister(&misc_dev);
   
 #if !defined(__aarch64__)
@@ -738,3 +738,6 @@ void cleanup_module(void) {
   }
   pr_info("Removed.\n");
 }
+
+module_init(pteditor_init);
+module_exit(pteditor_exit);
