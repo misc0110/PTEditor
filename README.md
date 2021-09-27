@@ -491,3 +491,20 @@ Prints a single line of the pretty-print representation of a page-table entry.
 
 * `line` The line to print (0 to 3)
 
+# Use in Academic Papers
+
+* [Rapid Prototyping for Microarchitectural Attacks](https://misc0110.net/files/rapid_prototyping_sec22.pdf) by Easdon, Schwarz, Schwarzl, Gruss (USENIX Security 2022)
+* [PLATYPUS: Software-based Power Side-Channel Attacks on x86](https://misc0110.net/files/platypus.pdf) by Lipp, Kogler, Oswald, Schwarz, Easdon, Canella, Gruss (IEEE S&P 2021)
+* [Speculative Dereferencing of Registers: Reviving Foreshadow](https://misc0110.net/files/specderef.pdf) by Schwarzl, Schuster, Schwarz, Gruss (FC 2021)
+* [Understanding TEE Containers, Easy to Use? Hard to Trust](https://arxiv.org/pdf/2109.01923) by Liu, Chen, Wang, Li, Zhang, Wang, Tang (arXiv 2021)
+* [How Trusted Execution Environments Fuel Research on Microarchitectural Attacks](https://misc0110.net/files/tee_uarch.pdf) by Schwarz and Gruss (IEEE Security & Privacy 2020)
+* [LVI: Hijacking Transient Execution through Microarchitectural Load Value Injection](https://misc0110.net/files/lvi.pdf) by Van Bulck, Moghimi, Schwarz, Lipp, Minkin, Genkin, Yarom, Sunar, Gruss, Piessens (IEEE S&P 2020)
+* [Medusa: Microarchitectural Data Leakage via Automated Attack Synthesis](https://misc0110.net/files/medusa.pdf) by Moghimi, Lipp, Sunar, Schwarz (USENIX Security 2020)
+* [KASLR: Break It, Fix It, Repeat](https://misc0110.net/files/kaslrbfr.pdf) by Canella, Schwarz, Haubenwallner, Schwarzl, Gruss (AsiaCCS 2020)
+* [JackHammer: Efficient Rowhammer on Heterogeneous FPGA-CPU Platforms](https://tches.iacr.org/index.php/TCHES/article/view/8587/8154) by Weissman, Tiemann, Moghimi, Custodio, Eisenbarth, Sunar (TCHES 2020)
+* [ConTExT: A Generic Approach for Mitigating Spectre](https://misc0110.net/files/context.pdf) by Schwarz, Lipp, Canella, Schilling, Kargl, Gruss (NDSS 2020)
+* [ZombieLoad: Cross-Privilege-Boundary Data Sampling](https://misc0110.net/files/zombieload.pdf) by Schwarz, Lipp, Moghimi, Van Bulck, Stecklina, Prescher, Gruss (CCS 2019)
+* [Fallout: Leaking Data on Meltdown-resistant CPUs](https://misc0110.net/files/fallout.pdf) by Canella, Genkin, Giner, Gruss, Lipp, Minkin, Moghimi, Piessens, Schwarz, Sunar, Van Bulck, Yarom (CCS 2019)
+* [A Systematic Evaluation of Transient Execution Attacks and Defenses](https://misc0110.net/files/transient_execution_attacks.pdf) by Canella, Van Bulck, Schwarz, Lipp, von Berg, Ortner, Piessens, Evtyushkin, Gruss (USENIX Security 2019)
+
+
