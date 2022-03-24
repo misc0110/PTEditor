@@ -980,6 +980,8 @@ static int ptedit_fd;
 #endif
 static int ptedit_umem;
 static int ptedit_pagesize;
+static int ptedit_pfn_multiply = 4096;
+static int ptedit_entry_size = sizeof(size_t);
 static size_t ptedit_paging_root;
 static unsigned char* ptedit_vmem;
 
@@ -1080,8 +1082,8 @@ static ptedit_entry_t ptedit_resolve_user_ext(void* address, pid_t pid, ptedit_p
 
     size_t pgd_entry, p4d_entry, pud_entry, pmd_entry, pt_entry;
 
-    //     printf("%zx + CR3(%zx) + PGDI(%zx) * 8 = %zx\n", ptedit_vmem, root, pgdi, ptedit_vmem + root + pgdi * sizeof(size_t));
-    pgd_entry = deref(root + pgdi * sizeof(size_t));
+    //     printf("%zx + CR3(%zx) + PGDI(%zx) * 8 = %zx\n", ptedit_vmem, root, pgdi, ptedit_vmem + root + pgdi * ptedit_entry_size);
+    pgd_entry = deref(root + pgdi * ptedit_entry_size);
     if (ptedit_cast(pgd_entry, ptedit_pgd_t).present != PTEDIT_PAGE_PRESENT) {
         return resolved;
     }
@@ -1089,7 +1091,7 @@ static ptedit_entry_t ptedit_resolve_user_ext(void* address, pid_t pid, ptedit_p
     resolved.valid |= PTEDIT_VALID_MASK_PGD;
     if (ptedit_paging_definition.has_p4d) {
         size_t pfn = (size_t)(ptedit_cast(pgd_entry, ptedit_pgd_t).pfn);
-        p4d_entry = deref(pfn * ptedit_pagesize + p4di * sizeof(size_t));
+        p4d_entry = deref(pfn * ptedit_pfn_multiply + p4di * ptedit_entry_size);
         resolved.valid |= PTEDIT_VALID_MASK_P4D;
     }
     else {
@@ -1104,7 +1106,7 @@ static ptedit_entry_t ptedit_resolve_user_ext(void* address, pid_t pid, ptedit_p
 
     if (ptedit_paging_definition.has_pud) {
         size_t pfn = (size_t)(ptedit_cast(p4d_entry, ptedit_p4d_t).pfn);
-        pud_entry = deref(pfn * ptedit_pagesize + pudi * sizeof(size_t));
+        pud_entry = deref(pfn * ptedit_pfn_multiply + pudi * ptedit_entry_size);
         resolved.valid |= PTEDIT_VALID_MASK_PUD;
     }
     else {
@@ -1118,7 +1120,7 @@ static ptedit_entry_t ptedit_resolve_user_ext(void* address, pid_t pid, ptedit_p
 
     if (ptedit_paging_definition.has_pmd) {
         size_t pfn = (size_t)(ptedit_cast(pud_entry, ptedit_pud_t).pfn);
-        pmd_entry = deref(pfn * ptedit_pagesize + pmdi * sizeof(size_t));
+        pmd_entry = deref(pfn * ptedit_pfn_multiply + pmdi * ptedit_entry_size);
         resolved.valid |= PTEDIT_VALID_MASK_PMD;
     }
     else {
@@ -1135,7 +1137,7 @@ static ptedit_entry_t ptedit_resolve_user_ext(void* address, pid_t pid, ptedit_p
 #endif
         // normal 4kb page
         size_t pfn = (size_t)(ptedit_cast(pmd_entry, ptedit_pmd_t).pfn);
-        pt_entry = deref(pfn * ptedit_pagesize + pti * sizeof(size_t)); //pt[pti];
+        pt_entry = deref(pfn * ptedit_pfn_multiply + pti * ptedit_entry_size); //pt[pti];
         resolved.pte = pt_entry;
         resolved.valid |= PTEDIT_VALID_MASK_PTE;
         if (ptedit_cast(pt_entry, ptedit_pte_t).present != PTEDIT_PAGE_PRESENT) {
@@ -1197,19 +1199,19 @@ ptedit_fnc void ptedit_update_user_ext(void* address, pid_t pid, ptedit_entry_t*
     pti = (addr >> ptedit_paging_definition.page_offset) % (1ull << ptedit_paging_definition.pt_entries);
 
     if ((vm->valid & PTEDIT_VALID_MASK_PTE) && (current.valid & PTEDIT_VALID_MASK_PTE)) {
-        pset((size_t)ptedit_cast(current.pmd, ptedit_pmd_t).pfn * ptedit_pagesize + pti * (ptedit_pagesize / (1 << ptedit_paging_definition.pt_entries)), vm->pte);
+        pset((size_t)ptedit_cast(current.pmd, ptedit_pmd_t).pfn * ptedit_pfn_multiply + pti * ptedit_entry_size, vm->pte);
     }
     if ((vm->valid & PTEDIT_VALID_MASK_PMD) && (current.valid & PTEDIT_VALID_MASK_PMD) && ptedit_paging_definition.has_pmd) {
-        pset((size_t)ptedit_cast(current.pud, ptedit_pud_t).pfn * ptedit_pagesize + pmdi * (ptedit_pagesize / (1 << ptedit_paging_definition.pmd_entries)), vm->pmd);
+        pset((size_t)ptedit_cast(current.pud, ptedit_pud_t).pfn * ptedit_pfn_multiply + pmdi * ptedit_entry_size, vm->pmd);
     }
     if ((vm->valid & PTEDIT_VALID_MASK_PUD) && (current.valid & PTEDIT_VALID_MASK_PUD) && ptedit_paging_definition.has_pud) {
-        pset((size_t)ptedit_cast(current.p4d, ptedit_p4d_t).pfn * ptedit_pagesize + pudi * (ptedit_pagesize / (1 << ptedit_paging_definition.pud_entries)), vm->pud);
+        pset((size_t)ptedit_cast(current.p4d, ptedit_p4d_t).pfn * ptedit_pfn_multiply + pudi * ptedit_entry_size, vm->pud);
     }
     if ((vm->valid & PTEDIT_VALID_MASK_P4D) && (current.valid & PTEDIT_VALID_MASK_P4D) && ptedit_paging_definition.has_p4d) {
-        pset((size_t)ptedit_cast(current.pgd, ptedit_pgd_t).pfn * ptedit_pagesize + p4di * (ptedit_pagesize / (1 << ptedit_paging_definition.p4d_entries)), vm->p4d);
+        pset((size_t)ptedit_cast(current.pgd, ptedit_pgd_t).pfn * ptedit_pfn_multiply + p4di * ptedit_entry_size, vm->p4d);
     }
     if ((vm->valid & PTEDIT_VALID_MASK_PGD) && (current.valid & PTEDIT_VALID_MASK_PGD) && ptedit_paging_definition.has_pgd) {
-        pset(root + pgdi * (ptedit_pagesize / (1 << ptedit_paging_definition.pgd_entries)), vm->pgd);
+        pset(root + pgdi * ptedit_entry_size, vm->pgd);
     }
 
     ptedit_invalidate_tlb(address);
