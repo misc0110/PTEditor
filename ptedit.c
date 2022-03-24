@@ -471,6 +471,7 @@ ptedit_fnc int ptedit_init() {
         ptedit_paging_definition.pmd_entries = 11;
         ptedit_paging_definition.pt_entries = 11;
         ptedit_paging_definition.page_offset = 14;
+        ptedit_use_implementation(PTEDIT_IMPL_USER_PREAD); // M1 workaround
     } else {
         ptedit_paging_definition.has_pgd = 1;
         ptedit_paging_definition.has_p4d = 0;
