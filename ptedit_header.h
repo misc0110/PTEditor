@@ -13,8 +13,6 @@
 #endif
 
 
-#include <stddef.h>
-
 #if defined(LINUX)
 #define PTEDITOR_DEVICE_NAME "pteditor"
 #define PTEDITOR_DEVICE_PATH "/dev/" PTEDITOR_DEVICE_NAME
@@ -1404,17 +1402,31 @@ ptedit_fnc int ptedit_init() {
     ptedit_paging_definition.pt_entries = 9;
     ptedit_paging_definition.page_offset = 12;
 #elif defined(__aarch64__)
-    ptedit_paging_definition.has_pgd = 1;
-    ptedit_paging_definition.has_p4d = 0;
-    ptedit_paging_definition.has_pud = 0;
-    ptedit_paging_definition.has_pmd = 1;
-    ptedit_paging_definition.has_pt = 1;
-    ptedit_paging_definition.pgd_entries = 9;
-    ptedit_paging_definition.p4d_entries = 0;
-    ptedit_paging_definition.pud_entries = 0;
-    ptedit_paging_definition.pmd_entries = 9;
-    ptedit_paging_definition.pt_entries = 9;
-    ptedit_paging_definition.page_offset = 12;
+    if(ptedit_get_pagesize() == 16384) {
+        ptedit_paging_definition.has_pgd = 1;
+        ptedit_paging_definition.has_p4d = 0;
+        ptedit_paging_definition.has_pud = 1;
+        ptedit_paging_definition.has_pmd = 1;
+        ptedit_paging_definition.has_pt = 1;
+        ptedit_paging_definition.pgd_entries = 11;
+        ptedit_paging_definition.p4d_entries = 0;
+        ptedit_paging_definition.pud_entries = 11;
+        ptedit_paging_definition.pmd_entries = 11;
+        ptedit_paging_definition.pt_entries = 11;
+        ptedit_paging_definition.page_offset = 14;
+    } else {
+        ptedit_paging_definition.has_pgd = 1;
+        ptedit_paging_definition.has_p4d = 0;
+        ptedit_paging_definition.has_pud = 0;
+        ptedit_paging_definition.has_pmd = 1;
+        ptedit_paging_definition.has_pt = 1;
+        ptedit_paging_definition.pgd_entries = 9;
+        ptedit_paging_definition.p4d_entries = 0;
+        ptedit_paging_definition.pud_entries = 0;
+        ptedit_paging_definition.pmd_entries = 9;
+        ptedit_paging_definition.pt_entries = 9;
+        ptedit_paging_definition.page_offset = 12;
+    }
 #endif
     return 0;
 }
