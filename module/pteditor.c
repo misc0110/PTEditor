@@ -524,6 +524,17 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
 
         (void)from_user(&paging, (void*)ioctl_param, sizeof(paging));
         mm = get_mm(paging.pid);
+
+#if defined(__aarch64__)
+        if(!mm || (mm && !mm->pgd)) {
+            // M1 Asahi Linux workaround with the limitation that it only works for the current process
+            asm volatile("mrs %0, ttbr0_el1" : "=r" (paging.root));
+            paging.root &= ~1;
+            (void)to_user((void*)ioctl_param, &paging, sizeof(paging));
+            return 0;
+        }
+#endif
+
         if(!mm) return 1;
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
         if(!mm_is_locked) mmap_read_lock(mm);
@@ -531,13 +542,6 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
         if(!mm_is_locked) down_read(&mm->mmap_sem);
 #endif
         paging.root = virt_to_phys(mm->pgd);
-#if defined(__aarch64__)
-        if(!paging.root) {
-            // M1 Asahi Linux workaround
-            asm volatile("mrs %0, ttbr0_el1" : "=r" (paging.root));
-            paging.root &= ~1;
-        }
-#endif
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
         if(!mm_is_locked) mmap_read_unlock(mm);
 #else
