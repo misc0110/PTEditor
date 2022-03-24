@@ -493,7 +493,7 @@ Prints a single line of the pretty-print representation of a page-table entry.
 
 # Use in Academic Papers
 
-* [Finding and Exploiting CPU Features using MSR Templating]() by Kogler, Weber, Haubenwallner, Lipp, Gruss, Schwarz (IEEE S&P 2022)
+* [Finding and Exploiting CPU Features using MSR Templating](https://misc0110.net/files/msrtemplate_sp22.pdf) by Kogler, Weber, Haubenwallner, Lipp, Gruss, Schwarz (IEEE S&P 2022)
 * [AMD Prefetch Attacks through Power and Time](https://misc0110.net/files/amd_prefetch_sec22.pdf) by Lipp, Gruss, Schwarz (USENIX Security 2022)
 * [Repurposing Segmentation as a Practical LVI-NULL Mitigation in SGX](https://misc0110.net/files/lvi_null_sec22.pdf) by Giner, Kogler, Canella, Schwarz, Gruss (USENIX Security 2022)
 * [Rapid Prototyping for Microarchitectural Attacks](https://misc0110.net/files/rapid_prototyping_sec22.pdf) by Easdon, Schwarz, Schwarzl, Gruss (USENIX Security 2022)
