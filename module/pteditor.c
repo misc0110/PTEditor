@@ -642,19 +642,23 @@ static struct file_operations umem_ops = {.owner = THIS_MODULE};
 static int open_umem(struct inode *inode, struct file *filp) { return 0; }
 static int has_umem = 0;
 
-#if !defined(__aarch64__)
 static const char *devmem_hook = "devmem_is_allowed";
 
 
 static int devmem_bypass(struct kretprobe_instance *p, struct pt_regs *regs) {
+#if defined(__aarch64__)
+  if (regs->regs[0] == 0) {
+    regs->regs[0] = 1;
+  }
+#else
   if (regs->ax == 0) {
     regs->ax = 1;
   }
+#endif
   return 0;
 }
 
 static struct kretprobe probe_devmem = {.handler = devmem_bypass, .maxactive = 20};
-#endif
 
 static int __init pteditor_init(void) {
   int r;
@@ -696,7 +700,6 @@ static int __init pteditor_init(void) {
   }
 #endif
 
-#if !defined(__aarch64__)
   probe_devmem.kp.symbol_name = devmem_hook;
 
   if (register_kretprobe(&probe_devmem) < 0) {
@@ -704,7 +707,6 @@ static int __init pteditor_init(void) {
   } else {
     pr_info("/dev/mem is now superuser read-/writable\n");
   }
-#endif
 
   OPS(OP_lseek) = (void*)kallsyms_lookup_name("memory_lseek");
   OPS(read) = (void*)kallsyms_lookup_name("read_mem");
@@ -728,9 +730,7 @@ static int __init pteditor_init(void) {
 static void __exit pteditor_exit(void) {
   misc_deregister(&misc_dev);
   
-#if !defined(__aarch64__)
   unregister_kretprobe(&probe_devmem);
-#endif
 
   if (has_umem) {
     pr_info("Remove unprivileged memory access\n");
