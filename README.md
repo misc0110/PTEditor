@@ -493,15 +493,17 @@ Prints a single line of the pretty-print representation of a page-table entry.
 
 # Use in Academic Papers
 
+* [Finding and Exploiting CPU Features using MSR Templating]() by Kogler, Weber, Haubenwallner, Lipp, Gruss, Schwarz (IEEE S&P 2022)
 * [AMD Prefetch Attacks through Power and Time](https://misc0110.net/files/amd_prefetch_sec22.pdf) by Lipp, Gruss, Schwarz (USENIX Security 2022)
 * [Repurposing Segmentation as a Practical LVI-NULL Mitigation in SGX](https://misc0110.net/files/lvi_null_sec22.pdf) by Giner, Kogler, Canella, Schwarz, Gruss (USENIX Security 2022)
 * [Rapid Prototyping for Microarchitectural Attacks](https://misc0110.net/files/rapid_prototyping_sec22.pdf) by Easdon, Schwarz, Schwarzl, Gruss (USENIX Security 2022)
-* [Systematic Analysis of Programming Languages and Their Execution Environments for Spectre Attacks](https://arxiv.org/pdf/2111.12528.pdf) by Naseredini, Gast, Schwarzl, Bernardo, Amel Smajic, Canella, Berger, Gruss (arXiv 2021)
+* [Systematic Analysis of Programming Languages and Their Execution Environments for Spectre Attacks](https://sahnaseredini.github.io/files/icissp22_spectre_naseredini.pdf) by Naseredini, Gast, Schwarzl, Bernardo, Amel Smajic, Canella, Berger, Gruss (ICISSP 2021)
 * [Domain Page-Table Isolation](https://arxiv.org/pdf/2111.10876.pdf) by Canella, Kogler, Giner, Gruss, Schwarz (arXiv 2021)
 * [PLATYPUS: Software-based Power Side-Channel Attacks on x86](https://misc0110.net/files/platypus.pdf) by Lipp, Kogler, Oswald, Schwarz, Easdon, Canella, Gruss (IEEE S&P 2021)
 * [Speculative Dereferencing of Registers: Reviving Foreshadow](https://misc0110.net/files/specderef.pdf) by Schwarzl, Schuster, Schwarz, Gruss (FC 2021)
 * [Understanding TEE Containers, Easy to Use? Hard to Trust](https://arxiv.org/pdf/2109.01923) by Liu, Chen, Wang, Li, Zhang, Wang, Tang (arXiv 2021)
 * [Simurgh: A Fully Decentralized and Secure NVMM User Space File System](https://dl.acm.org/doi/pdf/10.1145/3458817.3476180) by Moti, Schimmelpfennig, Salkhordeh, Klopp, Cortes, Rückert, Brinkmann (ACM SC 2021)
+* [Improving Address Translation Performance in Virtualized Multi-Tenant Systems](https://era.ed.ac.uk/bitstream/handle/1842/38624/Margaritov2021.pdf) by Margaritov (PhD Thesis 2021)
 * [How Trusted Execution Environments Fuel Research on Microarchitectural Attacks](https://misc0110.net/files/tee_uarch.pdf) by Schwarz and Gruss (IEEE Security & Privacy 2020)
 * [LVI: Hijacking Transient Execution through Microarchitectural Load Value Injection](https://misc0110.net/files/lvi.pdf) by Van Bulck, Moghimi, Schwarz, Lipp, Minkin, Genkin, Yarom, Sunar, Gruss, Piessens (IEEE S&P 2020)
 * [Data Sampling on MDS-resistant 10th Generation Intel Core (Ice Lake)](https://moghimi.org/papers/techreport2020-IceLakeMDS.pdf) by Moghimi (arXiv 2020)
