@@ -670,6 +670,9 @@ static struct kretprobe probe_devmem = {.handler = devmem_bypass, .maxactive = 2
 
 static int __init pteditor_init(void) {
   int r;
+#if defined(__aarch64__)
+  uint64_t tcr_el1;
+#endif
 
 #ifdef KPROBE_KALLSYMS_LOOKUP
     register_kprobe(&kp);
@@ -709,7 +712,6 @@ static int __init pteditor_init(void) {
 #endif
 
 #if defined(__aarch64__)
-  uint64_t tcr_el1;
   asm volatile("mrs %0, tcr_el1" : "=r" (tcr_el1));
   switch((tcr_el1 >> 14) & 3) {
       case 1:
