@@ -21,6 +21,7 @@
 pgd_t __attribute__((weak)) __pti_set_user_pgtbl(pgd_t *pgdp, pgd_t pgd);
 #endif
 
+static int real_page_size = 4096, real_page_shift = 12;
 
 #include "pteditor.h"
 
@@ -213,7 +214,7 @@ void _flush_tlb_page_smp(void* info) {
 static void
 invalidate_tlb_kernel(unsigned long addr) {
 #if defined(__i386__) || defined(__x86_64__)
-  flush_tlb_mm_range_func(get_mm(task_pid_nr(current)), addr, addr + PAGE_SIZE, PAGE_SHIFT, false);
+  flush_tlb_mm_range_func(get_mm(task_pid_nr(current)), addr, addr + real_page_size, real_page_shift, false);
 #elif defined(__aarch64__)
   struct vm_area_struct *vma = find_vma(current->mm, addr);
   tlb_page_t tlb_page;
@@ -506,14 +507,14 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
     {
         ptedit_page_t page;
         (void)from_user(&page, (void*)ioctl_param, sizeof(page));
-        to_user(page.buffer, phys_to_virt(page.pfn * PAGE_SIZE), PAGE_SIZE);
+        to_user(page.buffer, phys_to_virt(page.pfn * real_page_size), real_page_size);
         return 0;
     }
     case PTEDITOR_IOCTL_CMD_WRITE_PAGE:
     {
         ptedit_page_t page;
         (void)from_user(&page, (void*)ioctl_param, sizeof(page));
-        (void)from_user(phys_to_virt(page.pfn * PAGE_SIZE), page.buffer, PAGE_SIZE);
+        (void)from_user(phys_to_virt(page.pfn * real_page_size), page.buffer, real_page_size);
         return 0;
     }
     case PTEDITOR_IOCTL_CMD_GET_ROOT:
@@ -567,7 +568,7 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
         return 0;
     }
     case PTEDITOR_IOCTL_CMD_GET_PAGESIZE:
-        return PAGE_SIZE;
+        return real_page_size;
     case PTEDITOR_IOCTL_CMD_INVALIDATE_TLB:
         invalidate_tlb(ioctl_param);
         return 0;
@@ -704,6 +705,25 @@ static int __init pteditor_init(void) {
         pr_alert("Could not retrieve native_write_cr4 function\n");
         return -ENXIO;
     }
+  }
+#endif
+
+#if defined(__aarch64__)
+  uint64_t tcr_el1;
+  asm volatile("mrs %0, tcr_el1" : "=r" (tcr_el1));
+  switch((tcr_el1 >> 14) & 3) {
+      case 1:
+          // 64k pages
+          real_page_size = 64 * 1024;
+          real_page_shift = 16;
+          break;
+      case 2:
+          // 16k pages
+          real_page_size = 16 * 1024;
+          real_page_shift = 14;
+          break;
+      default:
+          break;
   }
 #endif
 
