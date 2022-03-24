@@ -33,8 +33,8 @@ static int ptedit_fd;
 #endif
 static int ptedit_umem;
 static int ptedit_pagesize;
-static int ptedit_pfn_multiply = 4096;
-static int ptedit_entry_size = sizeof(size_t);
+static size_t ptedit_pfn_multiply = 4096;
+static size_t ptedit_entry_size = sizeof(size_t);
 static size_t ptedit_paging_root;
 static unsigned char* ptedit_vmem;
 
