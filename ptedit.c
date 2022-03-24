@@ -106,6 +106,7 @@ static inline void ptedit_phys_write_pwrite(size_t address, size_t value) {
 // ---------------------------------------------------------------------------
 static ptedit_entry_t ptedit_resolve_user_ext(void* address, pid_t pid, ptedit_phys_read_t deref) {
     size_t root = (pid == 0) ? ptedit_paging_root : ptedit_get_paging_root(pid);
+    root = root & ~1;
 
     int pgdi, p4di, pudi, pmdi, pti;
     size_t addr = (size_t)address;
@@ -230,6 +231,7 @@ ptedit_fnc void ptedit_update_kernel(void* address, pid_t pid, ptedit_entry_t* v
 ptedit_fnc void ptedit_update_user_ext(void* address, pid_t pid, ptedit_entry_t* vm, ptedit_phys_write_t pset) {
     ptedit_entry_t current = ptedit_resolve(address, pid);
     size_t root = (pid == 0) ? ptedit_paging_root : ptedit_get_paging_root(pid);
+    root = root & ~1;
 
     if(!root) return;
     
