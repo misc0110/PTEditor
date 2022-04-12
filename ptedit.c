@@ -46,6 +46,8 @@ typedef struct {
 
 ptedit_paging_definition_t ptedit_paging_definition;
 
+
+
 // ---------------------------------------------------------------------------
 ptedit_fnc ptedit_entry_t ptedit_resolve_kernel(void* address, pid_t pid) {
     ptedit_entry_t vm;
@@ -602,7 +604,7 @@ ptedit_fnc void ptedit_write_physical_page(size_t pfn, char* content) {
 
 
 // ---------------------------------------------------------------------------
-ptedit_fnc size_t ptedit_get_paging_root(pid_t pid) {
+size_t ptedit_get_paging_root(pid_t pid) {
 #if defined(LINUX)
     ptedit_paging_t cr3;
     cr3.pid = (size_t)pid;
@@ -620,7 +622,7 @@ ptedit_fnc size_t ptedit_get_paging_root(pid_t pid) {
 
 
 // ---------------------------------------------------------------------------
-ptedit_fnc void ptedit_set_paging_root(pid_t pid, size_t root) {
+void ptedit_set_paging_root(pid_t pid, size_t root) {
     ptedit_paging_t cr3;
     cr3.pid = (size_t)pid;
     cr3.root = root; 
@@ -683,7 +685,7 @@ ptedit_fnc char ptedit_get_mt(unsigned char mt) {
 
 
 // ---------------------------------------------------------------------------
-ptedit_fnc const char* ptedit_mt_to_string(unsigned char mt) {
+const char* ptedit_mt_to_string(unsigned char mt) {
 #if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
     const char* mts[] = { "UC", "WC", "Rsvd", "Rsvd", "WT", "WP", "WB", "UC-", "Rsvd" };
     if (mt <= 7) return mts[mt];
@@ -781,7 +783,7 @@ ptedit_fnc unsigned char ptedit_find_mt(unsigned char type) {
 
 
 // ---------------------------------------------------------------------------
-ptedit_fnc int ptedit_find_first_mt(unsigned char type) {
+int ptedit_find_first_mt(unsigned char type) {
 #if defined(LINUX)
     return __builtin_ffs(ptedit_find_mt(type)) - 1;
 #else
@@ -811,9 +813,32 @@ ptedit_fnc size_t ptedit_apply_mt(size_t entry, unsigned char mt) {
 }
 
 // ---------------------------------------------------------------------------
+size_t ptedit_apply_mt_huge(size_t entry, unsigned char mt) {
+#if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
+    entry &= ~((1ull << PTEDIT_PAGE_BIT_PWT) | (1ull << PTEDIT_PAGE_BIT_PCD) | (1ull << PTEDIT_PAGE_BIT_PAT_LARGE));
+    if (mt & 1) entry |= (1ull << PTEDIT_PAGE_BIT_PWT);
+    if (mt & 2) entry |= (1ull << PTEDIT_PAGE_BIT_PCD);
+    if (mt & 4) entry |= (1ull << PTEDIT_PAGE_BIT_PAT_LARGE);
+#elif defined(__aarch64__)
+    entry &= ~0x1c;
+    entry |= (mt & 7) << 2;
+#endif
+    return entry;
+}
+
+// ---------------------------------------------------------------------------
 ptedit_fnc unsigned char ptedit_extract_mt(size_t entry) {
 #if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
     return (!!(entry & (1ull << PTEDIT_PAGE_BIT_PWT))) | ((!!(entry & (1ull << PTEDIT_PAGE_BIT_PCD))) << 1) | ((!!(entry & (1ull << PTEDIT_PAGE_BIT_PAT))) << 2);
+#elif defined(__aarch64__)
+    return (entry >> 2) & 7;
+#endif
+}
+
+// ---------------------------------------------------------------------------
+unsigned char ptedit_extract_mt_huge(size_t entry) {
+#if defined(__i386__) || defined(__x86_64__) || defined(_WIN64)
+    return (!!(entry & (1ull << PTEDIT_PAGE_BIT_PWT))) | ((!!(entry & (1ull << PTEDIT_PAGE_BIT_PCD))) << 1) | ((!!(entry & (1ull << PTEDIT_PAGE_BIT_PAT_LARGE))) << 2);
 #elif defined(__aarch64__)
     return (entry >> 2) & 7;
 #endif

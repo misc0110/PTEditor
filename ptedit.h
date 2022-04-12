@@ -8,6 +8,10 @@
 #include "module/pteditor.h"
 #include <sys/types.h>
 
+#if defined(LINUX)
+#include <stdlib.h>
+#endif
+
 #if defined(WINDOWS)
 typedef size_t pid_t;
 #endif
@@ -728,6 +732,19 @@ ptedit_fnc int ptedit_find_first_mt(unsigned char type);
 ptedit_fnc size_t ptedit_apply_mt(size_t entry, unsigned char mt);
 
 /**
+ * Returns a new page-table entry which uses the given memory type (PAT/MAIR).
+ * In contrast to ptedit_apply_mt, this function requires the underlying page to
+ * be a huge page.
+ * 
+ * @param[in] entry A page-table entry
+ * @param[in] mt A PAT/MAIR ID (between 0 and 7)
+ *
+ * @return A new page-table entry with the given memory type (PAT/MAIR)
+ *
+ */
+size_t ptedit_apply_mt_huge(size_t entry, unsigned char mt);
+
+/**
  * Returns the memory type (i.e., PAT/MAIR ID) which is used by a page-table entry.
  *
  * @param[in] entry A page-table entry
@@ -736,6 +753,18 @@ ptedit_fnc size_t ptedit_apply_mt(size_t entry, unsigned char mt);
  *
  */
 ptedit_fnc unsigned char ptedit_extract_mt(size_t entry);
+
+/**
+ * Returns the memory type (i.e., PAT/MAIR ID) which is used by a page-table entry.
+ * In contrast to ptedit_extract_mt, this function requires the underlying page to
+ * be a huge page.
+ *
+ * @param[in] entry A page-table entry
+ *
+ * @return A PAT/MAIR ID (between 0 and 7)
+ *
+ */
+unsigned char ptedit_extract_mt_huge(size_t entry);
 
 /**
  * Returns a human-readable representation of a memory type (PAT/MAIR value).
