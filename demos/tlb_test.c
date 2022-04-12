@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <memory.h>
+
 #include "../ptedit_header.h"
 
 #define COLOR_RED "\x1b[31m"

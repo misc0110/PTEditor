@@ -165,10 +165,6 @@ typedef struct {
 
 #include <sys/types.h>
 
-#if defined(LINUX)
-#include <stdlib.h>
-#endif
-
 #if defined(WINDOWS)
 typedef size_t pid_t;
 #endif

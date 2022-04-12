@@ -1,8 +1,9 @@
-#include "../ptedit_header.h"
 #include <memory.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/mman.h>
+
+#include "../ptedit_header.h"
 
 #define COLOR_RED "\x1b[31m"
 #define COLOR_GREEN "\x1b[32m"
