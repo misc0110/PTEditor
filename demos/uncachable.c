@@ -167,27 +167,30 @@ int main() {
 
     ptedit_entry_t huge_entry = ptedit_resolve(huge_page, 0);
     ptedit_print_entry_t(huge_entry);
-    printf(TAG_OK "Mapping is %s\n", ptedit_mt_to_string(ptedit_get_mt(ptedit_extract_mt_huge(huge_entry.pmd))));
+    unsigned char mt = ptedit_extract_mt_huge(huge_entry.pmd);
+    printf(TAG_OK "Mapping is %s\n", ptedit_mt_to_string(ptedit_get_mt(mt)));
+    size_t original_pmd = huge_entry.pmd;
 
-    printf(TAG_PROGRESS "Average access time: " COLOR_YELLOW "%d" COLOR_RESET " cycles\n", access_time(pt));
+    flush(huge_page);
+    printf(TAG_PROGRESS "Average access time: " COLOR_YELLOW "%d" COLOR_RESET " cycles\n", access_time(huge_page));
 
-    //huge_entry.pmd = ptedit_apply_mt_huge(huge_entry.pmd, uc_mt);
+    huge_entry.pmd = ptedit_apply_mt_huge(huge_entry.pmd, uc_mt);
     huge_entry.valid = PTEDIT_VALID_MASK_PMD;
     ptedit_update(huge_page, 0, &huge_entry);
 
     printf(TAG_OK "Mapping should now be uncachable\n");
 
-    flush(pt);
-    printf(TAG_PROGRESS "Average access time: " COLOR_YELLOW "%d" COLOR_RESET " cycles\n", access_time(pt));
+    flush(huge_page);
+    printf(TAG_PROGRESS "Average access time: " COLOR_YELLOW "%d" COLOR_RESET " cycles\n", access_time(huge_page));
 
-    //huge_entry.pmd = ptedit_apply_mt(huge_entry.pmd, wb_mt);
+    huge_entry.pmd = original_pmd;
     huge_entry.valid = PTEDIT_VALID_MASK_PMD;
-    //ptedit_update(pt, 0, &huge_entry);
+    ptedit_update(huge_page, 0, &huge_entry);
 
     printf(TAG_OK "Mapping should now be cachable again\n");
 
-    flush(pt);
-    printf(TAG_PROGRESS "Average access time: " COLOR_YELLOW "%d" COLOR_RESET " cycles\n", access_time(pt));
+    flush(huge_page);
+    printf(TAG_PROGRESS "Average access time: " COLOR_YELLOW "%d" COLOR_RESET " cycles\n", access_time(huge_page));
 
     munmap(huge_page, (2*1024*1024));
   } else {
