@@ -1,7 +1,7 @@
 all: tests
 
 tests: tests.c utest.h ../ptedit_header.h
-	gcc tests.c -std=gnu99 -o tests -fsanitize=address
+	gcc -Os tests.c -std=gnu99 -o tests -fsanitize=address
 
 clean:
 	rm -f tests

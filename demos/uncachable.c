@@ -5,6 +5,15 @@
 
 #include "../ptedit_header.h"
 
+#ifndef MAP_HUGE_2MB
+#if defined(LINUX)
+#include <linux/mman.h>
+#endif
+#ifndef MAP_HUGE_2MB
+#define MAP_HUGE_2MB (21 << 26)
+#endif
+#endif
+
 #define COLOR_RED "\x1b[31m"
 #define COLOR_GREEN "\x1b[32m"
 #define COLOR_YELLOW "\x1b[33m"
@@ -151,6 +160,39 @@ int main() {
 
   flush(pt);
   printf(TAG_PROGRESS "Average access time: " COLOR_YELLOW "%d" COLOR_RESET " cycles\n", access_time(pt));
+
+  char* huge_page = mmap(0, (2*1024*1024), PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS|MAP_POPULATE|MAP_HUGETLB|MAP_HUGE_2MB, -1, 0);
+  if (huge_page != MAP_FAILED) {
+    printf(TAG_OK "Allocated huge page\n");
+
+    ptedit_entry_t huge_entry = ptedit_resolve(huge_page, 0);
+    ptedit_print_entry_t(huge_entry);
+    printf(TAG_OK "Mapping is %s\n", ptedit_mt_to_string(ptedit_get_mt(ptedit_extract_mt_huge(huge_entry.pmd))));
+
+    printf(TAG_PROGRESS "Average access time: " COLOR_YELLOW "%d" COLOR_RESET " cycles\n", access_time(pt));
+
+    //huge_entry.pmd = ptedit_apply_mt_huge(huge_entry.pmd, uc_mt);
+    huge_entry.valid = PTEDIT_VALID_MASK_PMD;
+    ptedit_update(huge_page, 0, &huge_entry);
+
+    printf(TAG_OK "Mapping should now be uncachable\n");
+
+    flush(pt);
+    printf(TAG_PROGRESS "Average access time: " COLOR_YELLOW "%d" COLOR_RESET " cycles\n", access_time(pt));
+
+    //huge_entry.pmd = ptedit_apply_mt(huge_entry.pmd, wb_mt);
+    huge_entry.valid = PTEDIT_VALID_MASK_PMD;
+    //ptedit_update(pt, 0, &huge_entry);
+
+    printf(TAG_OK "Mapping should now be cachable again\n");
+
+    flush(pt);
+    printf(TAG_PROGRESS "Average access time: " COLOR_YELLOW "%d" COLOR_RESET " cycles\n", access_time(pt));
+
+    munmap(huge_page, (2*1024*1024));
+  } else {
+    printf(TAG_FAIL "Note: Could not allocate huge page.\n");
+  }
 
 error:
   ptedit_cleanup();
