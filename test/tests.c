@@ -10,7 +10,16 @@ UTEST_STATE();
 #else
 #define PAGE_ALIGN_CHAR __declspec(align(4096)) char
 #endif
+
+#if defined(__i386__) || defined(__x86_64__)
 void flush(void *p) { asm volatile("clflush 0(%0)\n" : : "c"(p) : "rax"); }
+#elif defined(__aarch64__)
+void flush(void *p) {
+  asm volatile("DC CIVAC, %0" ::"r"(p));
+  asm volatile("DSB ISH");
+  asm volatile("ISB");
+}
+#endif
 
 #ifndef MAP_HUGE_2MB
 #if defined(LINUX)
