@@ -742,7 +742,7 @@ ptedit_fnc size_t ptedit_apply_mt(size_t entry, unsigned char mt);
  * @return A new page-table entry with the given memory type (PAT/MAIR)
  *
  */
-size_t ptedit_apply_mt_huge(size_t entry, unsigned char mt);
+ptedit_fnc size_t ptedit_apply_mt_huge(size_t entry, unsigned char mt);
 
 /**
  * Returns the memory type (i.e., PAT/MAIR ID) which is used by a page-table entry.
@@ -764,7 +764,7 @@ ptedit_fnc unsigned char ptedit_extract_mt(size_t entry);
  * @return A PAT/MAIR ID (between 0 and 7)
  *
  */
-unsigned char ptedit_extract_mt_huge(size_t entry);
+ptedit_fnc unsigned char ptedit_extract_mt_huge(size_t entry);
 
 /**
  * Returns a human-readable representation of a memory type (PAT/MAIR value).
