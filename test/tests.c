@@ -57,7 +57,7 @@ size_t access_time_ext(void *ptr, size_t MEASUREMENTS, access_time_callback_t cb
     if(cb) cb(ptr);
   }
 
-  return (size_t) ((float) sum / MEASUREMENTS);
+  return (size_t) (10 * sum / MEASUREMENTS);
 }
 
 size_t access_time(void *ptr) {
