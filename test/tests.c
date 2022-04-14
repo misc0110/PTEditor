@@ -11,6 +11,25 @@ UTEST_STATE();
 #define PAGE_ALIGN_CHAR __declspec(align(4096)) char
 #endif
 
+#if defined(__i386__) || defined(__x86_64__)
+void flush(void *p) { asm volatile("clflush 0(%0)\n" : : "c"(p) : "rax"); }
+#elif defined(__aarch64__)
+void flush(void *p) {
+  asm volatile("DC CIVAC, %0" ::"r"(p));
+  asm volatile("DSB ISH");
+  asm volatile("ISB");
+}
+#endif
+
+#ifndef MAP_HUGE_2MB
+#if defined(LINUX)
+#include <linux/mman.h>
+#endif
+#ifndef MAP_HUGE_2MB
+#define MAP_HUGE_2MB (21 << 26)
+#endif
+#endif
+
 PAGE_ALIGN_CHAR page1[4096];
 PAGE_ALIGN_CHAR page2[4096];
 PAGE_ALIGN_CHAR scratch[4096];
@@ -22,9 +41,9 @@ PAGE_ALIGN_CHAR accessor[4096];
 
 #if defined(LINUX)
 size_t hrtime() {
-    struct timespec t1;
-    clock_gettime(CLOCK_MONOTONIC, &t1);
-    return t1.tv_sec * 1000 * 1000 * 1000ULL + t1.tv_nsec;
+  struct timespec t1;
+  clock_gettime(CLOCK_MONOTONIC, &t1);
+  return t1.tv_sec * 1000 * 1000 * 1000ULL + t1.tv_nsec;
 }
 #else
 size_t hrtime() {
@@ -36,21 +55,21 @@ size_t hrtime() {
 
 typedef void (*access_time_callback_t)(void*);
 
-int access_time_ext(void *ptr, size_t MEASUREMENTS, access_time_callback_t cb) {
+size_t access_time_ext(void *ptr, size_t MEASUREMENTS, access_time_callback_t cb) {
   size_t start = 0, end = 0, sum = 0;
 
   for (int i = 0; i < MEASUREMENTS; i++) {
     start = hrtime();
     *((volatile size_t*)ptr);
     end = hrtime();
-    sum += end - start;
+    sum += (end - start);
     if(cb) cb(ptr);
   }
 
-  return (int)(10 * sum / MEASUREMENTS);
+  return (size_t) (10 * sum / MEASUREMENTS);
 }
 
-int access_time(void *ptr) {
+size_t access_time(void *ptr) {
   return access_time_ext(ptr, 1000000, NULL);
 }
 
@@ -312,20 +331,26 @@ UTEST(memtype, writeback) {
     ASSERT_NE(ptedit_find_first_mt(PTEDIT_MT_WB), -1);
 }
 
-UTEST(memtype, find_first) {
-    ASSERT_TRUE(ptedit_get_mt(ptedit_find_first_mt(PTEDIT_MT_UC)) == PTEDIT_MT_UC);
-    ASSERT_TRUE(ptedit_get_mt(ptedit_find_first_mt(PTEDIT_MT_WB)) == PTEDIT_MT_WB);
-}
-
 UTEST(memtype, apply) {
     size_t entry = 0;
     ASSERT_NE(ptedit_apply_mt(entry, 1), entry);
     ASSERT_EQ(ptedit_apply_mt(entry, 0), entry);
 }
 
+UTEST(memtype, apply_huge) {
+    size_t entry = 0;
+    ASSERT_NE(ptedit_apply_mt_huge(entry, 1), entry);
+    ASSERT_EQ(ptedit_apply_mt_huge(entry, 0), entry);
+}
+
 UTEST(memtype, extract) {
     ASSERT_TRUE(ptedit_extract_mt(ptedit_apply_mt(0, 5)) == 5);
     ASSERT_TRUE(ptedit_extract_mt(ptedit_apply_mt((size_t)-1, 2)) == 2);
+}
+
+UTEST(memtype, extract_huge) {
+    ASSERT_TRUE(ptedit_extract_mt_huge(ptedit_apply_mt_huge(0, 5)) == 5);
+    ASSERT_TRUE(ptedit_extract_mt_huge(ptedit_apply_mt_huge((size_t)-1, 2)) == 2);
 }
 
 UTEST(memtype, uncachable_access_time) {
@@ -337,7 +362,8 @@ UTEST(memtype, uncachable_access_time) {
         int wb_mt = ptedit_find_first_mt(PTEDIT_MT_WB);
         ASSERT_NE(wb_mt, -1);
         
-        int before = access_time(scratch);
+        flush(scratch);
+        size_t before = access_time(scratch);
         
         ptedit_entry_t entry = ptedit_resolve(scratch, 0);
         size_t pte = entry.pte;
@@ -347,16 +373,59 @@ UTEST(memtype, uncachable_access_time) {
         entry.valid = PTEDIT_VALID_MASK_PTE;
         ptedit_update(scratch, 0, &entry);   
         
-        int uc = access_time(scratch);
+        flush(scratch);
+        size_t uc = access_time(scratch);
         
         entry.pte = pte;
         entry.valid = PTEDIT_VALID_MASK_PTE;
         ptedit_update(scratch, 0, &entry);   
         
-        int after = access_time(scratch);
+        size_t after = access_time(scratch);
 
         ASSERT_LT(after + 5, uc);
         ASSERT_LT(before + 5, uc);
+    }
+}
+
+UTEST(memtype, uncachable_huge_page_access_time) {
+    if(getenv("TRAVISCI")) {
+        ASSERT_TRUE(1);
+    } else {
+        char* huge_page = mmap(0, (2*1024*1024), PROT_READ|PROT_WRITE, MAP_SHARED|MAP_ANONYMOUS|MAP_POPULATE|MAP_HUGETLB|MAP_HUGE_2MB, -1, 0);
+        if (huge_page != MAP_FAILED) {
+          int uc_mt = ptedit_find_first_mt(PTEDIT_MT_UC);
+          ASSERT_NE(uc_mt, -1);
+          int wb_mt = ptedit_find_first_mt(PTEDIT_MT_WB);
+          ASSERT_NE(wb_mt, -1);
+
+          flush(huge_page);
+          size_t before = access_time(huge_page);
+          
+          ptedit_entry_t entry = ptedit_resolve(huge_page, 0);
+          size_t pmd = entry.pmd;
+          ASSERT_TRUE(entry.valid);
+          ASSERT_TRUE(entry.pmd);
+
+          entry.pmd = ptedit_apply_mt_huge(entry.pmd, uc_mt);
+          entry.valid = PTEDIT_VALID_MASK_PMD;
+          ptedit_update(huge_page, 0, &entry);   
+          
+          flush(huge_page);
+          size_t uc = access_time(huge_page);
+          
+          entry.pmd = pmd;
+          entry.valid = PTEDIT_VALID_MASK_PMD;
+          ptedit_update(huge_page, 0, &entry);   
+          
+          size_t after = access_time(huge_page);
+
+          munmap(huge_page, (2*1024*1024));
+
+          ASSERT_LT(after + 5, uc);
+          ASSERT_LT(before + 5, uc);
+        } else {
+          fprintf(stdout, "Note: Could not allocate huge page.\n");
+        }
     }
 }
 

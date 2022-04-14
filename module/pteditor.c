@@ -394,14 +394,14 @@ static int update_vm(ptedit_entry_t* new_entry, int lock) {
   }
 #endif
 
-  if((old_entry.valid & PTEDIT_VALID_MASK_PMD) && (new_entry->valid & PTEDIT_VALID_MASK_PMD)) {
-      pr_warn("Updating PMD\n");
-      set_pmd(old_entry.pmd, native_make_pmd(new_entry->pmd));
-  }
-
   if((old_entry.valid & PTEDIT_VALID_MASK_PUD) && (new_entry->valid & PTEDIT_VALID_MASK_PUD)) {
       pr_warn("Updating PUD\n");
       set_pud(old_entry.pud, native_make_pud(new_entry->pud));
+  }
+
+  if((old_entry.valid & PTEDIT_VALID_MASK_PMD) && (new_entry->valid & PTEDIT_VALID_MASK_PMD)) {
+      pr_warn("Updating PMD\n");
+      set_pmd(old_entry.pmd, native_make_pmd(new_entry->pmd));
   }
 
   if((old_entry.valid & PTEDIT_VALID_MASK_PTE) && (new_entry->valid & PTEDIT_VALID_MASK_PTE)) {

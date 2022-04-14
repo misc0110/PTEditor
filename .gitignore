@@ -58,3 +58,5 @@ compile_commands.json
 /test/tests
 /example
 
+# Development files
+.ccls-cache

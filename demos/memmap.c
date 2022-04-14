@@ -1,5 +1,6 @@
-#include "../ptedit_header.h"
 #include <stdio.h>
+
+#include "../ptedit_header.h"
 
 int is_present(size_t entry) {
 #if defined(__i386__) || defined(__x86_64__)

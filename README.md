@@ -153,6 +153,8 @@ System Info | Descriptions
 `int `[`ptedit_find_first_mt`](#group__MTS_1ga12456ca2dfe5cf1fa049af91b51f75c4)`(unsigned char type)`            | Returns the first memory type attribute (PAT/MAIR) which is programmed to the given memory type.
 `size_t `[`ptedit_apply_mt`](#group__MTS_1ga8ae0242de0315431c377db0aae5e511e)`(size_t entry,unsigned char mt)`            | Returns a new page-table entry which uses the given memory type (PAT/MAIR).
 `unsigned char `[`ptedit_extract_mt`](#group__MTS_1ga14dc1a89a89dfbf7c4def93e616bbd83)`(size_t entry)`            | Returns the memory type (i.e., PAT/MAIR ID) which is used by a page-table entry.
+`size_t `[`ptedit_apply_mt_huge`](#group__MTS_1ga8ae0242de0315431c377db0aae5e511e)`(size_t entry,unsigned char mt)`            | Returns a new entry for a huge page which uses the given memory type (PAT/MAIR).
+`unsigned char `[`ptedit_extract_mt_huge`](#group__MTS_1ga14dc1a89a89dfbf7c4def93e616bbd83)`(size_t entry)`            | Returns the memory type (i.e., PAT/MAIR ID) which is used by a huge-page entry.
 `const char * `[`ptedit_mt_to_string`](#group__MTS_1gab8c7af3fab13d3255239d31bb2e8723f)`(unsigned char mt)`            | Returns a human-readable representation of a memory type (PAT/MAIR value).
 
  Pretty print       | Descriptions
@@ -456,6 +458,28 @@ A new page-table entry with the given memory type (PAT/MAIR)
 ### `unsigned char `[`ptedit_extract_mt`](#group__MTS_1ga14dc1a89a89dfbf7c4def93e616bbd83)`(size_t entry)`
 
 Returns the memory type (i.e., PAT/MAIR ID) which is used by a page-table entry.
+
+**Parameters**
+* `entry` A page-table entry
+
+**Returns**
+A PAT/MAIR ID (between 0 and 7)
+
+### `size_t `[`ptedit_apply_mt_huge`](#group__MTS_1ga8ae0242de0315431c377db0aae5e511e)`(size_t entry,unsigned char mt)`
+
+Returns a new entry for a huge page which uses the given memory type (PAT/MAIR).
+
+**Parameters**
+* `entry` A page-table entry
+
+* `mt` A PAT/MAIR ID (between 0 and 7)
+
+**Returns**
+A new page-table entry with the given memory type (PAT/MAIR)
+
+### `unsigned char `[`ptedit_extract_mt`](#group__MTS_1ga14dc1a89a89dfbf7c4def93e616bbd83)`(size_t entry)`
+
+Returns the memory type (i.e., PAT/MAIR ID) which is used by a huge-page entry.
 
 **Parameters**
 * `entry` A page-table entry
