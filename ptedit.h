@@ -257,6 +257,27 @@ ptedit_fnc void ptedit_pte_set_bit(void* address, pid_t pid, int bit);
 ptedit_fnc void ptedit_pte_clear_bit(void* address, pid_t pid, int bit);
 
 /**
+ * Clears one or multiple bits directly in the different paging levels of an address.
+ *
+ * @param[in] address The virtual address
+ * @param[in] pid The pid of the process (0 for own process)
+ * @param[in] bit The bit to clear (one of PTEDIT_PAGE_BIT_*)
+ * @param[in] paging_affected_levels Bitfield of affected page levels
+ */
+ptedit_fnc void ptedit_set_bit(void* address, pid_t pid, int bit,size_t paging_affected_levels);
+
+
+/**
+ * Clears one or multiple bits directly in the different paging levels of an address.
+ *
+ * @param[in] address The virtual address
+ * @param[in] pid The pid of the process (0 for own process)
+ * @param[in] bit The bit to clear (one of PTEDIT_PAGE_BIT_*)
+ * @param[in] paging_affected_levels Bitfield of affected page levels
+ */
+ptedit_fnc void ptedit_clear_bit(void* address, pid_t pid, int bit,size_t paging_affected_levels);
+
+/**
  * Returns the value of a bit directly from the PTE of an address.
  *
  * @param[in] address The virtual address
@@ -378,6 +399,7 @@ typedef struct {
     size_t execution_disabled : 1;
 } ptedit_pte_t;
 #pragma pack(pop)
+
 
 #elif defined(__aarch64__)
 #define PTEDIT_PAGE_PRESENT 3
