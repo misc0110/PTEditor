@@ -13,6 +13,33 @@
 #include <linux/proc_fs.h>
 #include <linux/kprobes.h>
 
+#ifdef CONFIG_X86_KERNEL_IBT
+__noendbr u64 ibt_save(void)
+{
+	u64 msr = 0;
+
+	if (cpu_feature_enabled(X86_FEATURE_IBT)) {
+		rdmsrl(MSR_IA32_S_CET, msr);
+		wrmsrl(MSR_IA32_S_CET, msr & ~CET_ENDBR_EN);
+	}
+
+	return msr;
+}
+
+__noendbr void ibt_restore(u64 save)
+{
+	u64 msr;
+
+	if (cpu_feature_enabled(X86_FEATURE_IBT)) {
+		rdmsrl(MSR_IA32_S_CET, msr);
+		msr &= ~CET_ENDBR_EN;
+		msr |= (save & CET_ENDBR_EN);
+		wrmsrl(MSR_IA32_S_CET, msr);
+	}
+}
+
+#endif
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
 #include <linux/mmap_lock.h>
 #endif
@@ -105,7 +132,23 @@ static inline int pmd_large(pmd_t pmd) {
 #define KPROBE_KALLSYMS_LOOKUP 1
 typedef unsigned long (*kallsyms_lookup_name_t)(const char *name);
 kallsyms_lookup_name_t kallsyms_lookup_name_func;
+
+#ifdef CONFIG_X86_KERNEL_IBT
+unsigned long kallsyms_lookup_name_func_ibt(const char* name) {
+  u64 ibt;
+  unsigned long r;
+
+  ibt = ibt_save();
+  r = kallsyms_lookup_name_func(name);
+  ibt_restore(ibt);
+
+  return r;
+}
+
+#define kallsyms_lookup_name kallsyms_lookup_name_func_ibt
+#else
 #define kallsyms_lookup_name kallsyms_lookup_name_func
+#endif
 
 static struct kprobe kp = {
     .symbol_name = "kallsyms_lookup_name"
@@ -679,11 +722,16 @@ static int __init pteditor_init(void) {
 #endif
 
 #ifdef KPROBE_KALLSYMS_LOOKUP
-    register_kprobe(&kp);
-    kallsyms_lookup_name = (kallsyms_lookup_name_t) kp.addr;
+    r = register_kprobe(&kp);
+    if (r != 0) {
+      pr_alert("Could not register kprobe\n");
+      return -ENXIO;
+    }
+
+    kallsyms_lookup_name_func = (kallsyms_lookup_name_t) kp.addr;
     unregister_kprobe(&kp);
 
-    if(!unlikely(kallsyms_lookup_name)) {
+    if(!unlikely(kallsyms_lookup_name_func)) {
       pr_alert("Could not retrieve kallsyms_lookup_name address\n");
       return -ENXIO;
     }
