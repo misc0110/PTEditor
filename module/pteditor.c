@@ -257,7 +257,14 @@ void _flush_tlb_page_smp(void* info) {
 static void
 invalidate_tlb_kernel(unsigned long addr) {
 #if defined(__i386__) || defined(__x86_64__)
+#ifdef CONFIG_X86_KERNEL_IBT
+  u64 ibt;
+  ibt = ibt_save();
+#endif
   flush_tlb_mm_range_func(get_mm(task_pid_nr(current)), addr, addr + real_page_size, real_page_shift, false);
+#ifdef CONFIG_X86_KERNEL_IBT
+  ibt_restore(ibt);
+#endif
 #elif defined(__aarch64__)
   struct vm_area_struct *vma = find_vma(current->mm, addr);
   tlb_page_t tlb_page;
