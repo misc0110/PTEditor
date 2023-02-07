@@ -1037,7 +1037,7 @@ typedef struct {
     int page_offset;
 } ptedit_paging_definition_t;
 
-ptedit_paging_definition_t ptedit_paging_definition;
+static ptedit_paging_definition_t ptedit_paging_definition;
 
 
 
