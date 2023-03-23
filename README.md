@@ -517,10 +517,17 @@ Prints a single line of the pretty-print representation of a page-table entry.
 
 # Use in Academic Papers
 
+* [(M)WAIT for It: Bridging the Gap between Microarchitectural and Architectural Side Channels](https://misc0110.net/files/mwait_sec23.pdf) by Zhang, Kim, Weber, Schwarz (USENIX Security 2023)
+* [Layered Binary Templating](https://gruss.cc/files/lbta.pdf) by Schwarzl, Kraft, Gruss (ACNS 2023)
+* [ÆPIC Leak: Architecturally Leaking Uninitialized Data from the Microarchitecture](https://misc0110.net/files/aepicleak_sec22.pdf) by Borrello, Kogler, Schwarzl, Lipp, Gruss, Schwarz (USENIX Security 2022)
 * [Finding and Exploiting CPU Features using MSR Templating](https://misc0110.net/files/msrtemplate_sp22.pdf) by Kogler, Weber, Haubenwallner, Lipp, Gruss, Schwarz (IEEE S&P 2022)
+* [Half-Double: Hammering From the Next Row Over](https://andreaskogler.com/papers/halfdouble.pdf) by Kogler, Juffinger, Qazi, Kim, Lipp, Boichat, Shiu, Nissler, Gruss (USENIX Security 2022)
 * [AMD Prefetch Attacks through Power and Time](https://misc0110.net/files/amd_prefetch_sec22.pdf) by Lipp, Gruss, Schwarz (USENIX Security 2022)
 * [Repurposing Segmentation as a Practical LVI-NULL Mitigation in SGX](https://misc0110.net/files/lvi_null_sec22.pdf) by Giner, Kogler, Canella, Schwarz, Gruss (USENIX Security 2022)
 * [Rapid Prototyping for Microarchitectural Attacks](https://misc0110.net/files/rapid_prototyping_sec22.pdf) by Easdon, Schwarz, Schwarzl, Gruss (USENIX Security 2022)
+* [SGXDump: A Repeatable Code-Reuse Attack for Extracting SGX Enclave Memory](https://doi.org/10.3390/app12157655) by Yoon, Lee (Applied Sciences, 2022)
+* [SAM: A Mechanism to Facilitate Smear-Aware Forensic Analysis of Volatile System Memory](https://www.tandfonline.com/doi/abs/10.1080/19361610.2022.2161972) by Parida, Nath, Das (Journal of Applied Security Research, 2022)
+* [Protected Functions: User Space Privileged Function Calls](https://link.springer.com/chapter/10.1007/978-3-031-21867-5_8) by Moti, Salkhordeh, Brinkmann (ARCS 2022)
 * [Systematic Analysis of Programming Languages and Their Execution Environments for Spectre Attacks](https://sahnaseredini.github.io/files/icissp22_spectre_naseredini.pdf) by Naseredini, Gast, Schwarzl, Bernardo, Amel Smajic, Canella, Berger, Gruss (ICISSP 2021)
 * [Domain Page-Table Isolation](https://arxiv.org/pdf/2111.10876.pdf) by Canella, Kogler, Giner, Gruss, Schwarz (arXiv 2021)
 * [PLATYPUS: Software-based Power Side-Channel Attacks on x86](https://misc0110.net/files/platypus.pdf) by Lipp, Kogler, Oswald, Schwarz, Easdon, Canella, Gruss (IEEE S&P 2021)
