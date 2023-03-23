@@ -46,9 +46,9 @@ jobs:
           run: |
             uname -a
             ls -hal
-            sudo apt install gcc g++ linux-headers-$(uname -r)
+            apt install gcc g++ linux-headers-$(uname -r)
             make && git diff --exit-code
-            sudo insmod module/pteditor.ko
+            insmod module/pteditor.ko
             echo ::set-output name=tests::$(./test/tests)
       - name: Test results
         run: |
