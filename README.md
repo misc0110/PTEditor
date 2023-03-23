@@ -1,6 +1,5 @@
 # PTEditor
 ![GitHub Actions](https://github.com/misc0110/PTEditor/actions/workflows/ci.yml/badge.svg)
-[![Build Status](https://travis-ci.com/misc0110/PTEditor.svg?branch=master)](https://travis-ci.com/misc0110/PTEditor)
 
 A small library to modify all page-table levels of all processes from user space for x86_64 (Linux and Windows 10) and ARMv8 (Linux).
 It also allows to read and program memory types (i.e., PATs on x86 and MAIRs on ARM).

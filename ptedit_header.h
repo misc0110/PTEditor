@@ -414,27 +414,6 @@ ptedit_fnc void ptedit_pte_set_bit(void* address, pid_t pid, int bit);
 ptedit_fnc void ptedit_pte_clear_bit(void* address, pid_t pid, int bit);
 
 /**
- * Clears one or multiple bits directly in the different paging levels of an address.
- *
- * @param[in] address The virtual address
- * @param[in] pid The pid of the process (0 for own process)
- * @param[in] bit The bit to clear (one of PTEDIT_PAGE_BIT_*)
- * @param[in] paging_affected_levels Bitfield of affected page levels
- */
-ptedit_fnc void ptedit_set_bit(void* address, pid_t pid, int bit,size_t paging_affected_levels);
-
-
-/**
- * Clears one or multiple bits directly in the different paging levels of an address.
- *
- * @param[in] address The virtual address
- * @param[in] pid The pid of the process (0 for own process)
- * @param[in] bit The bit to clear (one of PTEDIT_PAGE_BIT_*)
- * @param[in] paging_affected_levels Bitfield of affected page levels
- */
-ptedit_fnc void ptedit_clear_bit(void* address, pid_t pid, int bit,size_t paging_affected_levels);
-
-/**
  * Returns the value of a bit directly from the PTE of an address.
  *
  * @param[in] address The virtual address
@@ -1880,62 +1859,6 @@ ptedit_fnc void ptedit_pte_clear_bit(void* address, pid_t pid, int bit) {
     if (!(vm.valid & PTEDIT_VALID_MASK_PTE)) return;
     vm.pte &= ~(1ull << bit);
     vm.valid = PTEDIT_VALID_MASK_PTE;
-    ptedit_update(address, pid, &vm);
-}
-
-ptedit_fnc void ptedit_set_bit(void* address, pid_t pid, int bit,size_t paging_affected_levels) {
-    ptedit_entry_t vm = ptedit_resolve(address, pid);
-    size_t bitmask = (1ull << bit);
-    
-    if ((vm.valid & PTEDIT_VALID_MASK_PTE) && (paging_affected_levels & PTEDIT_VALID_MASK_PTE)) {
-        vm.pte |= bitmask;
-        vm.valid |= PTEDIT_VALID_MASK_PTE;
-    }
-    if ((vm.valid & PTEDIT_VALID_MASK_PMD) && (paging_affected_levels & PTEDIT_VALID_MASK_PMD) && ptedit_paging_definition.has_pmd) {
-        vm.pmd |= bitmask;
-        vm.valid |= PTEDIT_VALID_MASK_PMD;
-    }
-    if ((vm.valid & PTEDIT_VALID_MASK_PUD) && (paging_affected_levels & PTEDIT_VALID_MASK_PUD) && ptedit_paging_definition.has_pud) {
-        vm.pud |= bitmask;
-        vm.valid |= PTEDIT_VALID_MASK_PUD;
-    }
-    if ((vm.valid & PTEDIT_VALID_MASK_P4D) && (paging_affected_levels & PTEDIT_VALID_MASK_P4D) && ptedit_paging_definition.has_p4d) {
-        vm.p4d |= bitmask;
-        vm.valid |= PTEDIT_VALID_MASK_P4D;
-    }
-    if ((vm.valid & PTEDIT_VALID_MASK_PGD) && (paging_affected_levels & PTEDIT_VALID_MASK_PGD) && ptedit_paging_definition.has_pgd) {
-        vm.pgd |= bitmask;
-        vm.valid |= PTEDIT_VALID_MASK_PGD;
-    }
-
-    ptedit_update(address, pid, &vm);
-}
-
-ptedit_fnc void ptedit_clear_bit(void* address, pid_t pid, int bit,size_t paging_affected_levels) {
-    ptedit_entry_t vm = ptedit_resolve(address, pid);
-    size_t bitmask = ~(1ull << bit);
-    
-    if ((vm.valid & PTEDIT_VALID_MASK_PTE) && (paging_affected_levels & PTEDIT_VALID_MASK_PTE)) {
-        vm.pte &= bitmask;
-        vm.valid |= PTEDIT_VALID_MASK_PTE;
-    }
-    if ((vm.valid & PTEDIT_VALID_MASK_PMD) && (paging_affected_levels & PTEDIT_VALID_MASK_PMD) && ptedit_paging_definition.has_pmd) {
-        vm.pmd &= bitmask;
-        vm.valid |= PTEDIT_VALID_MASK_PMD;
-    }
-    if ((vm.valid & PTEDIT_VALID_MASK_PUD) && (paging_affected_levels & PTEDIT_VALID_MASK_PUD) && ptedit_paging_definition.has_pud) {
-        vm.pud &= bitmask;
-        vm.valid |= PTEDIT_VALID_MASK_PUD;
-    }
-    if ((vm.valid & PTEDIT_VALID_MASK_P4D) && (paging_affected_levels & PTEDIT_VALID_MASK_P4D) && ptedit_paging_definition.has_p4d) {
-        vm.p4d &= bitmask;
-        vm.valid |= PTEDIT_VALID_MASK_P4D;
-    }
-    if ((vm.valid & PTEDIT_VALID_MASK_PGD) && (paging_affected_levels & PTEDIT_VALID_MASK_PGD) && ptedit_paging_definition.has_pgd) {
-        vm.pgd &= bitmask;
-        vm.valid |= PTEDIT_VALID_MASK_PGD;
-    }
-
     ptedit_update(address, pid, &vm);
 }
 

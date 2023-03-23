@@ -247,31 +247,6 @@ UTEST(pte, pte_set_pfn) {
     ASSERT_TRUE(accessor[0] == 2);
 }
 
-// =========================================================================
-//                             Bit Modifications in Paging
-// =========================================================================
-// UTEST(pte, ptedit_clear_bit) {
-//     memset(page1,0x42,4096);
-//     ptedit_clear_bit(page1, 0, PTEDIT_PAGE_BIT_ACCESSED,PTEDIT_VALID_MASK_PUD|PTEDIT_VALID_MASK_PMD|PTEDIT_VALID_MASK_PTE);
-//     ptedit_entry_t entry = ptedit_resolve(page1, 0);
-//     ASSERT_TRUE(PTEDIT_B(entry.pte, PTEDIT_PAGE_BIT_ACCESSED) == 0);
-//     ASSERT_TRUE(PTEDIT_B(entry.pud, PTEDIT_PAGE_BIT_ACCESSED) == 0);
-//     ASSERT_TRUE(PTEDIT_B(entry.pd, PTEDIT_PAGE_BIT_ACCESSED) == 0);
-// }
-// 
-// UTEST(pte, ptedit_set_bit) {
-//     memset(page1,0x42,4096);
-//     ptedit_clear_bit(page1, 0, PTEDIT_PAGE_BIT_ACCESSED,PTEDIT_VALID_MASK_PUD|PTEDIT_VALID_MASK_PMD|PTEDIT_VALID_MASK_PTE);
-//     ptedit_entry_t entry = ptedit_resolve(page1, 0);
-//     ASSERT_TRUE(PTEDIT_B(entry.pte, PTEDIT_PAGE_BIT_ACCESSED) == 0);
-//     ASSERT_TRUE(PTEDIT_B(entry.pud, PTEDIT_PAGE_BIT_ACCESSED) == 0);
-//     ASSERT_TRUE(PTEDIT_B(entry.pd, PTEDIT_PAGE_BIT_ACCESSED) == 0);
-//     ptedit_set_bit(page1, 0, PTEDIT_PAGE_BIT_ACCESSED,PTEDIT_VALID_MASK_PUD|PTEDIT_VALID_MASK_PMD|PTEDIT_VALID_MASK_PTE);
-//     entry = ptedit_resolve(page1, 0);
-//     ASSERT_TRUE(PTEDIT_B(entry.pte, PTEDIT_PAGE_BIT_ACCESSED) == 1);
-//     ASSERT_TRUE(PTEDIT_B(entry.pud, PTEDIT_PAGE_BIT_ACCESSED) == 1);
-//     ASSERT_TRUE(PTEDIT_B(entry.pd, PTEDIT_PAGE_BIT_ACCESSED) == 1);
-// }
 
 // =========================================================================
 //                             Physical Pages
