@@ -13,7 +13,7 @@ The library can be used by linking it to the application (see `example.c`) or as
 
 First, add the public key of the PPA and the PPA URL to the package manager, and update the package manager
 
-    curl -s "https://misc0110.github.io/ppa/KEY.gpg" | sudo apt-key add -
+    curl -s "https://misc0110.github.io/ppa/KEY.gpg" | sudo tee /etc/apt/trusted.gpg.d/pteditor.asc
     sudo curl -s -o /etc/apt/sources.list.d/misc0110.list "https://misc0110.github.io/ppa/file.list"
     sudo apt update
 
@@ -72,7 +72,7 @@ Using the Visual Studio project, the driver can then simply be built from Visual
 
 # Requirements
 
-The library requires a recent Linux kernel (continuously tested on the current kernel for Ubuntu 18.04 (kernel 5.3), 20.04 (kernel 5.8), and 22.04 (kernel 5.15)) or Windows 10. 
+The library requires a recent Linux kernel (continuously tested on the current kernel for Ubuntu 18.04 (kernel 5.3), 20.04 (kernel 5.8), and 22.04 (kernel 5.15 and 6.2)) or Windows 10. 
 It supports both x86_64 and ARMv8. 
 
 The library does not rely on any other library. It uses only standard C functionality. 
@@ -516,7 +516,11 @@ Prints a single line of the pretty-print representation of a page-table entry.
 
 # Use in Academic Papers
 
+* [Efficient and Generic Microarchitectural Hash-Function Recovery](https://misc0110.net/files/hash_recovery_sp24.pdf) by Gerlach, Schwarz, Faroß, Schwarz (IEEE S&P 2024)
+* [Downfall: Exploiting Speculative Data Gathering](https://www.usenix.org/system/files/usenixsecurity23-moghimi.pdf) by Moghimi (USENIX Security 2023)
+* [Collide+Power: Leaking Inaccessible Data with Software-based Power Side Channels](https://misc0110.net/files/collidepower_sec23.pdf) by Kogler, Juffinger, Giner, Gerlach, Schwarzl, Schwarz, Gruss, Mangard (USENIX Security 2023)
 * [(M)WAIT for It: Bridging the Gap between Microarchitectural and Architectural Side Channels](https://misc0110.net/files/mwait_sec23.pdf) by Zhang, Kim, Weber, Schwarz (USENIX Security 2023)
+* [Indirect Meltdown: Building Novel Side-Channel Attacks from Transient Execution Attacks]() by Weber, Thomas, Gerlach, Zhang, Schwarz (ESORICS 2023)
 * [Layered Binary Templating](https://gruss.cc/files/lbta.pdf) by Schwarzl, Kraft, Gruss (ACNS 2023)
 * [ÆPIC Leak: Architecturally Leaking Uninitialized Data from the Microarchitecture](https://misc0110.net/files/aepicleak_sec22.pdf) by Borrello, Kogler, Schwarzl, Lipp, Gruss, Schwarz (USENIX Security 2022)
 * [Finding and Exploiting CPU Features using MSR Templating](https://misc0110.net/files/msrtemplate_sp22.pdf) by Kogler, Weber, Haubenwallner, Lipp, Gruss, Schwarz (IEEE S&P 2022)

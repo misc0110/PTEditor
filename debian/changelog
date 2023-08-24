@@ -1,3 +1,8 @@
+pteditor-dkms (0.6) bionic; urgency=medium
+
+  * Fixes for kernel 6.2
+  * Fixes for multiple inclusions
+
 pteditor-dkms (0.5) bionic; urgency=medium
 
   * Allow multiple inclusions of the header
