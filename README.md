@@ -72,7 +72,7 @@ Using the Visual Studio project, the driver can then simply be built from Visual
 
 # Requirements
 
-The library requires a recent Linux kernel (continuously tested on the current kernel for Ubuntu 18.04 (kernel 5.3), 20.04 (kernel 5.8), and 22.04 (kernel 5.15 and 6.2)) or Windows 10. 
+The library requires a recent Linux kernel (continuously tested on the current kernel for 20.04 (kernel 5.8), and 22.04 (kernel 5.15 and 6.2)) or Windows 10. 
 It supports both x86_64 and ARMv8. 
 
 The library does not rely on any other library. It uses only standard C functionality. 
