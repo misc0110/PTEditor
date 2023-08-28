@@ -223,7 +223,7 @@ typedef void (*ptedit_update_t)(void*, pid_t, ptedit_entry_t*);
  *
  * @return A structure containing the page-table entries of all levels.
  */
-ptedit_fnc ptedit_resolve_t ptedit_resolve;
+extern ptedit_fnc ptedit_resolve_t ptedit_resolve;
 
 /**
  * Updates one or more page-table entries for a virtual address of a given process.
@@ -234,7 +234,7 @@ ptedit_fnc ptedit_resolve_t ptedit_resolve;
  * @param[in] vm A structure containing the values for the page-table entries and a bitmask indicating which entries to update
  *
  */
-ptedit_fnc ptedit_update_t ptedit_update;
+extern ptedit_fnc ptedit_update_t ptedit_update;
 
 /**
  * Sets a bit directly in the PTE of an address.
