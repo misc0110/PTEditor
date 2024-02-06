@@ -21,20 +21,20 @@ int main(int argc, char** argv)
   memset(addr,0x42,2*1024*1024);
   
   ptedit_entry_t entry = ptedit_resolve(addr, 0);
-  ptedit_clear_bit(addr, 0, PTEDIT_PAGE_BIT_ACCESSED,PTEDIT_VALID_MASK_PUD|PTEDIT_VALID_MASK_PMD|PTEDIT_VALID_MASK_PTE);
+  ptedit_pte_clear_bit(addr, 0, PTEDIT_PAGE_BIT_ACCESSED);
   entry = ptedit_resolve(addr, 0);
   ptedit_print_entry(entry.pte);
   ptedit_print_entry(entry.pmd);
   ptedit_print_entry(entry.pud);
-  ptedit_set_bit(addr, 0, PTEDIT_PAGE_BIT_ACCESSED,PTEDIT_VALID_MASK_PUD|PTEDIT_VALID_MASK_PMD|PTEDIT_VALID_MASK_PTE);
+  ptedit_pte_set_bit(addr, 0, PTEDIT_PAGE_BIT_ACCESSED);
   entry = ptedit_resolve(addr, 0);
   ptedit_print_entry(entry.pte);
   ptedit_print_entry(entry.pmd);
   ptedit_print_entry(entry.pud);
 
-  //clear accessed bit of pd entry
+  //set accessed bit of pd entry
   size_t address_pfn = ptedit_get_pfn(entry.pd);
-  ptedit_set_bit(addr, 0, PTEDIT_PAGE_BIT_ACCESSED,PTEDIT_VALID_MASK_PMD);
+  ptedit_pte_set_bit(addr, 0, PTEDIT_PAGE_BIT_ACCESSED);
   munmap(addr,4096);
 
   ptedit_cleanup();
