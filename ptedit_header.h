@@ -5,10 +5,6 @@
 #ifndef PTEDITOR_MODULE_H
 #define PTEDITOR_MODULE_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #if defined(__linux__) || defined(__linux) || defined(__unix__) || defined(LINUX) || defined(UNIX)
 #define LINUX
 #endif
@@ -163,6 +159,10 @@ typedef struct {
 
 #ifndef _PTEDITOR_H_
 #define _PTEDITOR_H_
+
+#ifdef __cplusplus
+"C" {
+#endif
 
 #define ptedit_fnc static
 
@@ -972,6 +972,10 @@ ptedit_fnc void ptedit_print_entry(size_t entry);
 ptedit_fnc void ptedit_print_entry_line(size_t entry, int line);
 
 /** @} */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 #include <stdio.h>
@@ -1891,7 +1895,3 @@ ptedit_fnc void ptedit_pte_set_pfn(void* address, pid_t pid, size_t pfn) {
     vm.valid = PTEDIT_VALID_MASK_PTE;
     ptedit_update(address, pid, &vm);
 }
-
-#ifdef __cplusplus
-}
-#endif
