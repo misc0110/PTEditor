@@ -5,6 +5,10 @@
 #ifndef PTEDITOR_MODULE_H
 #define PTEDITOR_MODULE_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if defined(__linux__) || defined(__linux) || defined(__unix__) || defined(LINUX) || defined(UNIX)
 #define LINUX
 #endif
@@ -1887,3 +1891,7 @@ ptedit_fnc void ptedit_pte_set_pfn(void* address, pid_t pid, size_t pfn) {
     vm.valid = PTEDIT_VALID_MASK_PTE;
     ptedit_update(address, pid, &vm);
 }
+
+#ifdef __cplusplus
+}
+#endif

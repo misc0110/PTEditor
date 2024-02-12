@@ -3,6 +3,10 @@
 #ifndef _PTEDITOR_H_
 #define _PTEDITOR_H_
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define ptedit_fnc
 
 #include "module/pteditor.h"
@@ -811,5 +815,9 @@ ptedit_fnc void ptedit_print_entry(size_t entry);
 ptedit_fnc void ptedit_print_entry_line(size_t entry, int line);
 
 /** @} */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
