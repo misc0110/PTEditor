@@ -96,6 +96,11 @@ static inline int pmd_large(pmd_t pmd) {
 #define to_user copy_to_user
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0)
+#define pud_leaf pud_large
+#define pmd_leaf pmd_large
+#endif
+
 #ifdef pr_fmt
 #undef pr_fmt
 #endif
