@@ -96,6 +96,11 @@ static inline int pmd_large(pmd_t pmd) {
 #define to_user copy_to_user
 #endif
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 6, 0)
+#define pud_leaf pud_large
+#define pmd_leaf pmd_large
+#endif
+
 #ifdef pr_fmt
 #undef pr_fmt
 #endif
@@ -328,7 +333,7 @@ static int resolve_vm(size_t addr, vm_t* entry, int lock) {
 
   /* Get offset of PMD (page middle directory) */
   entry->pmd = pmd_offset(entry->pud, addr);
-  if (pmd_none(*(entry->pmd)) || pud_large(*(entry->pud))) {
+  if (pmd_none(*(entry->pmd)) || pud_leaf(*(entry->pud))) {
     entry->pmd = NULL;
     goto error_out;
   }
@@ -340,7 +345,7 @@ static int resolve_vm(size_t addr, vm_t* entry, int lock) {
 #else
   entry->pte = pte_offset_kernel(entry->pmd, addr);
 #endif
-  if (entry->pte == NULL || pmd_large(*(entry->pmd))) {
+  if (entry->pte == NULL || pmd_leaf(*(entry->pmd))) {
     entry->pte = NULL;
     goto error_out;
   }
