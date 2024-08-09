@@ -1,3 +1,7 @@
+pteditor-dkms (0.7) bionic; urgency=medium
+
+  * Fixes for kernel 6.5 and newer
+
 pteditor-dkms (0.6) bionic; urgency=medium
 
   * Fixes for kernel 6.2
