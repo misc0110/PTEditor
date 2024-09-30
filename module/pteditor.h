@@ -90,6 +90,14 @@ typedef struct {
     size_t root;
 } ptedit_paging_t;
 
+/**
+ * Structure to hold the arguments for TLB invalidation
+ */
+typedef struct {
+    pid_t pid;
+    void* address;
+} ptedit_invalidate_tlb_args_t;
+
 #define PTEDIT_VALID_MASK_PGD (1<<0)
 #define PTEDIT_VALID_MASK_P4D (1<<1)
 #define PTEDIT_VALID_MASK_PUD (1<<2)
@@ -140,6 +148,9 @@ typedef struct {
 
 #define PTEDITOR_IOCTL_CMD_SWITCH_TLB_INVALIDATION \
   _IOR(PTEDITOR_IOCTL_MAGIC_NUMBER, 13, size_t)
+
+#define PTEDITOR_IOCTL_CMD_INVALIDATE_TLB_PID \
+  _IOR(PTEDITOR_IOCTL_MAGIC_NUMBER, 14, size_t)
 #else
 #define PTEDITOR_READ_PAGE CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
 #define PTEDITOR_WRITE_PAGE CTL_CODE(FILE_DEVICE_UNKNOWN, 0x802, METHOD_BUFFERED, FILE_READ_DATA)

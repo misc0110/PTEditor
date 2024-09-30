@@ -92,6 +92,14 @@ typedef struct {
     size_t root;
 } ptedit_paging_t;
 
+/**
+ * Structure to hold the arguments for TLB invalidation
+ */
+typedef struct {
+    pid_t pid;
+    void* address;
+} ptedit_invalidate_tlb_args_t;
+
 #define PTEDIT_VALID_MASK_PGD (1<<0)
 #define PTEDIT_VALID_MASK_P4D (1<<1)
 #define PTEDIT_VALID_MASK_PUD (1<<2)
@@ -142,6 +150,9 @@ typedef struct {
 
 #define PTEDITOR_IOCTL_CMD_SWITCH_TLB_INVALIDATION \
   _IOR(PTEDITOR_IOCTL_MAGIC_NUMBER, 13, size_t)
+
+#define PTEDITOR_IOCTL_CMD_INVALIDATE_TLB_PID \
+  _IOR(PTEDITOR_IOCTL_MAGIC_NUMBER, 14, size_t)
 #else
 #define PTEDITOR_READ_PAGE CTL_CODE(FILE_DEVICE_UNKNOWN, 0x801, METHOD_BUFFERED, FILE_ANY_ACCESS)
 #define PTEDITOR_WRITE_PAGE CTL_CODE(FILE_DEVICE_UNKNOWN, 0x802, METHOD_BUFFERED, FILE_READ_DATA)
@@ -789,12 +800,20 @@ ptedit_fnc void ptedit_set_paging_root(pid_t pid, size_t root);
  */
 
  /**
-  * Invalidates the TLB for a given address on all CPUs.
+  * Invalidates the TLB for a given address (belonging to the current process) on all CPUs.
   *
   * @param[in] address The address to invalidate
   *
   */
 ptedit_fnc void ptedit_invalidate_tlb(void* address);
+
+ /**
+  * Invalidates the TLB for a given address (belonging to the specified pid) on all CPUs.
+  *
+  * @param[in] address The address to invalidate
+  *
+  */
+ptedit_fnc void ptedit_invalidate_tlb_pid(pid_t pid, void* address);
 
  /**
   * Change the method used for flushing the TLB (either kernel or custom function)
@@ -1255,20 +1274,20 @@ ptedit_fnc void ptedit_update_user_ext(void* address, pid_t pid, ptedit_entry_t*
         pset(root + pgdi * ptedit_entry_size, vm->pgd);
     }
 
-    ptedit_invalidate_tlb(address);
+    ptedit_invalidate_tlb_pid(pid, address);
 }
 
 // ---------------------------------------------------------------------------
 static void ptedit_update_user(void* address, pid_t pid, ptedit_entry_t* vm) {
     ptedit_update_user_ext(address, pid, vm, ptedit_phys_write_pwrite);
-    ptedit_invalidate_tlb(address);
+    ptedit_invalidate_tlb_pid(pid, address);
 }
 
 
 // ---------------------------------------------------------------------------
 static void ptedit_update_user_map(void* address, pid_t pid, ptedit_entry_t* vm) {
     ptedit_update_user_ext(address, pid, vm, ptedit_phys_write_map);
-    ptedit_invalidate_tlb(address);
+    ptedit_invalidate_tlb_pid(pid, address);
 }
 
 // ---------------------------------------------------------------------------
@@ -1622,9 +1641,24 @@ void ptedit_set_paging_root(pid_t pid, size_t root) {
 #endif
 }
 
+// ---------------------------------------------------------------------------
+ptedit_fnc void ptedit_invalidate_tlb_pid(pid_t pid, void* address) {
+#if defined(LINUX)
+    ptedit_invalidate_tlb_args_t args;
+    args.pid = pid;
+    args.address = address;
+    ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_INVALIDATE_TLB_PID, (size_t)&args, pid);
+#else
+    size_t vaddr = (size_t)address;
+    DWORD returnLength;
+    DeviceIoControl(ptedit_fd, PTEDITOR_FLUSH_TLB, (LPVOID)&vaddr, sizeof(vaddr), (LPVOID)&vaddr, sizeof(vaddr), &returnLength, 0);
+#endif
+}
 
 // ---------------------------------------------------------------------------
 ptedit_fnc void ptedit_invalidate_tlb(void* address) {
+    // we do not directly call ptedit_invalidate_tlb_pid to ensure that the old
+    // API is still working (for backwards compatibility)
 #if defined(LINUX)
     ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_INVALIDATE_TLB, (size_t)address);
 #else
