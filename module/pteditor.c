@@ -134,7 +134,7 @@ typedef struct {
 static bool device_busy = false;
 static bool mm_is_locked = false;
 
-void (*invalidate_tlb)(unsigned long);
+void (*invalidate_tlb)(pid_t, void*);
 void (*flush_tlb_mm_range_func)(struct mm_struct*, unsigned long, unsigned long, unsigned int, bool);
 void (*native_write_cr4_func)(unsigned long);
 static struct mm_struct* get_mm(size_t);
@@ -203,8 +203,8 @@ _invalidate_tlb(void *addr) {
 }
 
 static void
-invalidate_tlb_custom(unsigned long addr) {
-  on_each_cpu(_invalidate_tlb, (void*) addr, 1);
+invalidate_tlb_custom(pid_t pid, void* addr) {
+  on_each_cpu(_invalidate_tlb, addr, 1);
 }
 
 #if defined(__aarch64__)
@@ -220,9 +220,9 @@ void _flush_tlb_page_smp(void* info) {
 #endif
 
 static void
-invalidate_tlb_kernel(unsigned long addr) {
+invalidate_tlb_kernel(pid_t pid, void* addr) {
 #if defined(__i386__) || defined(__x86_64__)
-  flush_tlb_mm_range_func(get_mm(task_pid_nr(current)), addr, addr + real_page_size, real_page_shift, false);
+  flush_tlb_mm_range_func(get_mm(pid), (unsigned long) addr, (unsigned long) addr + real_page_size, real_page_shift, false);
 #elif defined(__aarch64__)
   struct vm_area_struct *vma = find_vma(current->mm, addr);
   tlb_page_t tlb_page;
@@ -421,7 +421,7 @@ static int update_vm(ptedit_entry_t* new_entry, int lock) {
       set_pte(old_entry.pte, native_make_pte(new_entry->pte));
   }
 
-  invalidate_tlb(addr);
+  invalidate_tlb(old_entry.pid, (void*) addr);
 
   /* Unlock mm */
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 8, 0)
@@ -585,9 +585,20 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
     }
     case PTEDITOR_IOCTL_CMD_GET_PAGESIZE:
         return real_page_size;
-    case PTEDITOR_IOCTL_CMD_INVALIDATE_TLB:
-        invalidate_tlb(ioctl_param);
+    case PTEDITOR_IOCTL_CMD_INVALIDATE_TLB_PID:
+    {
+        ptedit_invalidate_tlb_args_t args;
+        (void)from_user(&args, (void*)ioctl_param, sizeof(args));
+        invalidate_tlb(args.pid, args.address);
         return 0;
+    }
+    case PTEDITOR_IOCTL_CMD_INVALIDATE_TLB:
+    {
+        // this is implemented as its own call to stay backwards compatible
+        // even in case a user uses the old ioctl calls
+        invalidate_tlb(task_pid_nr(current), (void*) ioctl_param);
+        return 0;
+    }
     case PTEDITOR_IOCTL_CMD_GET_PAT:
     {
 #if defined(__i386__) || defined(__x86_64__)

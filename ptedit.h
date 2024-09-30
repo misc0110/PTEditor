@@ -632,12 +632,20 @@ ptedit_fnc void ptedit_set_paging_root(pid_t pid, size_t root);
  */
 
  /**
-  * Invalidates the TLB for a given address on all CPUs.
+  * Invalidates the TLB for a given address (belonging to the current process) on all CPUs.
   *
   * @param[in] address The address to invalidate
   *
   */
 ptedit_fnc void ptedit_invalidate_tlb(void* address);
+
+ /**
+  * Invalidates the TLB for a given address (belonging to the specified pid) on all CPUs.
+  *
+  * @param[in] address The address to invalidate
+  *
+  */
+ptedit_fnc void ptedit_invalidate_tlb_pid(pid_t pid, void* address);
 
  /**
   * Change the method used for flushing the TLB (either kernel or custom function)
