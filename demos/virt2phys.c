@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
     } else {
         printf(TAG_PROGRESS "Page is 2MB\n");
         ptedit_print_entry(entry.pd);
-        phys = (ptedit_get_pfn(entry.pd) << 21) | (((size_t)&target) & 0x1fffff);
+        phys = (ptedit_get_pfn(entry.pd) << 12) | (((size_t)&target) & 0x1fffff);
     }
 
     printf(TAG_OK "Virtual address: %p\n", &target);
