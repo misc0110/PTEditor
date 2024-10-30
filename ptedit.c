@@ -431,7 +431,11 @@ ptedit_fnc int ptedit_init() {
         fprintf(stderr, PTEDIT_COLOR_RED "[-]" PTEDIT_COLOR_RESET "Error: Could not open PTEditor device: %s\n", PTEDITOR_DEVICE_PATH);
         return -1;
     }
+#if !defined(__aarch64__)
     ptedit_umem = open("/proc/umem", O_RDWR);
+#else
+    ptedit_umem = 0;
+#endif
 #else
     ptedit_fd = CreateFile(PTEDITOR_DEVICE_PATH, GENERIC_ALL, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_SYSTEM, 0);
     if (ptedit_fd == INVALID_HANDLE_VALUE) {

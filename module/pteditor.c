@@ -224,13 +224,13 @@ invalidate_tlb_kernel(pid_t pid, void* addr) {
 #if defined(__i386__) || defined(__x86_64__)
   flush_tlb_mm_range_func(get_mm(pid), (unsigned long) addr, (unsigned long) addr + real_page_size, real_page_shift, false);
 #elif defined(__aarch64__)
-  struct vm_area_struct *vma = find_vma(current->mm, addr);
+  struct vm_area_struct *vma = find_vma(current->mm, (unsigned long)addr);
   tlb_page_t tlb_page;
-  if (unlikely(vma == NULL || addr < vma->vm_start)) {
+  if (unlikely(vma == NULL || (unsigned long)addr < vma->vm_start)) {
     return;
   }
   tlb_page.vma = vma;
-  tlb_page.addr = addr;
+  tlb_page.addr = (unsigned long)addr;
   on_each_cpu(_flush_tlb_page_smp, &tlb_page, 1);
 #endif
 }
