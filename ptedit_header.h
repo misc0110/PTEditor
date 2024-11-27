@@ -13,6 +13,8 @@
 #undef LINUX
 #endif
 
+#include <sys/types.h>
+
 
 #if defined(LINUX)
 #define PTEDITOR_DEVICE_NAME "pteditor"
@@ -1364,10 +1366,10 @@ ptedit_fnc void ptedit_print_entry_line(size_t entry, int line) {
     }
 #elif defined(__aarch64__)
     if (line == 0 || line == 3) {
-        printf("+--+--+--+---+-+--+------------------+--+-+-+-+--+---+-+\n");
+        printf("+--+--+--+---+-+---+--+------------------+--+-+-+-+--+---+-+\n");
     }
     if (line == 1) {
-        printf("| ?| ?|XN|PXN|C| ?|        PFN       |NG|A|S|P|NS|MAI|T|\n");
+        printf("| ?| ?|XN|PXN|C|DBM| ?|        PFN       |NG|A|S|P|NS|MAI|T|\n");
     }
     if (line == 2) {
         printf("|");
@@ -1376,7 +1378,8 @@ ptedit_fnc void ptedit_print_entry_line(size_t entry, int line) {
         PEDIT_PRINT_B(" %d", PTEDIT_B(entry, 54));
         PEDIT_PRINT_B(" %d ", PTEDIT_B(entry, 53));
         PEDIT_PRINT_B("%d", PTEDIT_B(entry, 52));
-        PEDIT_PRINT_B("%2d", (PTEDIT_B(entry, 51) << 3) | (PTEDIT_B(entry, 50) << 2) | (PTEDIT_B(entry, 49) << 1) | PTEDIT_B(entry, 48));
+        PEDIT_PRINT_B(" %d ", PTEDIT_B(entry, 51));
+        PEDIT_PRINT_B("%2d", (PTEDIT_B(entry, 50) << 2) | (PTEDIT_B(entry, 49) << 1) | PTEDIT_B(entry, 48));
         printf(" %16p |", (void*)((entry >> 12) & ((1ull << 36) - 1)));
         PEDIT_PRINT_B(" %d", PTEDIT_B(entry, 11));
         PEDIT_PRINT_B("%d", PTEDIT_B(entry, 10));
@@ -1567,7 +1570,7 @@ ptedit_fnc int ptedit_get_pagesize() {
 ptedit_fnc void ptedit_read_physical_page(size_t pfn, char* buffer) {
 #if defined(LINUX)
     if (ptedit_umem > 0) {
-        if (pread(ptedit_umem, buffer, ptedit_pagesize, pfn >> ptedit_paging_definition.pfn_offset) == -1) {
+        if (pread(ptedit_umem, buffer, ptedit_pagesize, (pfn >> ptedit_paging_definition.pfn_offset) * ptedit_pagesize) == -1) {
           return;
         }
     }
@@ -1589,14 +1592,14 @@ ptedit_fnc void ptedit_read_physical_page(size_t pfn, char* buffer) {
 ptedit_fnc void ptedit_write_physical_page(size_t pfn, char* content) {
 #if defined(LINUX)
     if (ptedit_umem > 0) {
-        if (pwrite(ptedit_umem, content, ptedit_pagesize, pfn >> ptedit_paging_definition.pfn_offset) == -1) {
+        if (pwrite(ptedit_umem, content, ptedit_pagesize, (pfn >> ptedit_paging_definition.pfn_offset) * ptedit_pagesize) == -1) {
           return;
         }
     }
     else {
         ptedit_page_t page;
         page.buffer = (unsigned char*)content;
-        page.pfn= pfn >> ptedit_paging_definition.pfn_offset;
+        page.pfn = pfn >> ptedit_paging_definition.pfn_offset;
         ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_WRITE_PAGE, (size_t)&page);
     }
 #else

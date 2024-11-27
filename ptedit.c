@@ -365,10 +365,10 @@ ptedit_fnc void ptedit_print_entry_line(size_t entry, int line) {
     }
 #elif defined(__aarch64__)
     if (line == 0 || line == 3) {
-        printf("+--+--+--+---+-+--+------------------+--+-+-+-+--+---+-+\n");
+        printf("+--+--+--+---+-+---+--+------------------+--+-+-+-+--+---+-+\n");
     }
     if (line == 1) {
-        printf("| ?| ?|XN|PXN|C| ?|        PFN       |NG|A|S|P|NS|MAI|T|\n");
+        printf("| ?| ?|XN|PXN|C|DBM| ?|        PFN       |NG|A|S|P|NS|MAI|T|\n");
     }
     if (line == 2) {
         printf("|");
@@ -377,7 +377,8 @@ ptedit_fnc void ptedit_print_entry_line(size_t entry, int line) {
         PEDIT_PRINT_B(" %d", PTEDIT_B(entry, 54));
         PEDIT_PRINT_B(" %d ", PTEDIT_B(entry, 53));
         PEDIT_PRINT_B("%d", PTEDIT_B(entry, 52));
-        PEDIT_PRINT_B("%2d", (PTEDIT_B(entry, 51) << 3) | (PTEDIT_B(entry, 50) << 2) | (PTEDIT_B(entry, 49) << 1) | PTEDIT_B(entry, 48));
+        PEDIT_PRINT_B(" %d ", PTEDIT_B(entry, 51));
+        PEDIT_PRINT_B("%2d", (PTEDIT_B(entry, 50) << 2) | (PTEDIT_B(entry, 49) << 1) | PTEDIT_B(entry, 48));
         printf(" %16p |", (void*)((entry >> 12) & ((1ull << 36) - 1)));
         PEDIT_PRINT_B(" %d", PTEDIT_B(entry, 11));
         PEDIT_PRINT_B("%d", PTEDIT_B(entry, 10));
