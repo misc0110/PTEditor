@@ -61,8 +61,8 @@ typedef struct {
  */
 #if defined(LINUX)
 typedef struct {
-    /** Physical address */
-    size_t paddr;
+    /** Page-frame number */
+    size_t pfn;
     /** Virtual address */
     size_t vaddr;
     /** Page size */
