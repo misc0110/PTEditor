@@ -517,17 +517,17 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
     }
     case PTEDITOR_IOCTL_CMD_READ_PAGE:
     {
-      ptedit_page_t page;
-      (void)from_user(&page, (void*)ioctl_param, sizeof(page));
-      to_user(page.buffer, phys_to_virt(page.pfn * real_page_size), real_page_size);
-      return 0;
+        ptedit_page_t page;
+        (void)from_user(&page, (void*)ioctl_param, sizeof(page));
+        to_user(page.buffer, phys_to_virt(page.pfn * real_page_size), real_page_size);
+        return 0;
     }
     case PTEDITOR_IOCTL_CMD_WRITE_PAGE:
     {
-      ptedit_page_t page;
-      (void)from_user(&page, (void*)ioctl_param, sizeof(page));
-      (void)from_user(phys_to_virt(page.pfn * real_page_size), page.buffer, real_page_size);
-      return 0;
+        ptedit_page_t page;
+        (void)from_user(&page, (void*)ioctl_param, sizeof(page));
+        (void)from_user(phys_to_virt(page.pfn * real_page_size), page.buffer, real_page_size);
+        return 0;
     }
     case PTEDITOR_IOCTL_CMD_GET_ROOT:
     {

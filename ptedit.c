@@ -568,7 +568,7 @@ ptedit_fnc int ptedit_get_pagesize() {
 ptedit_fnc void ptedit_read_physical_page(size_t pfn, char* buffer) {
 #if defined(LINUX)
     if (ptedit_umem > 0) {
-        if (pread(ptedit_umem, buffer, ptedit_pagesize, pfn >> ptedit_paging_definition.pfn_offset) == -1) {
+        if (pread(ptedit_umem, buffer, ptedit_pagesize, (pfn >> ptedit_paging_definition.pfn_offset) * ptedit_pagesize) == -1) {
           return;
         }
     }
@@ -590,14 +590,14 @@ ptedit_fnc void ptedit_read_physical_page(size_t pfn, char* buffer) {
 ptedit_fnc void ptedit_write_physical_page(size_t pfn, char* content) {
 #if defined(LINUX)
     if (ptedit_umem > 0) {
-        if (pwrite(ptedit_umem, content, ptedit_pagesize, pfn >> ptedit_paging_definition.pfn_offset) == -1) {
+        if (pwrite(ptedit_umem, content, ptedit_pagesize, (pfn >> ptedit_paging_definition.pfn_offset) * ptedit_pagesize) == -1) {
           return;
         }
     }
     else {
         ptedit_page_t page;
         page.buffer = (unsigned char*)content;
-        page.pfn= pfn >> ptedit_paging_definition.pfn_offset;
+        page.pfn = pfn >> ptedit_paging_definition.pfn_offset;
         ioctl(ptedit_fd, PTEDITOR_IOCTL_CMD_WRITE_PAGE, (size_t)&page);
     }
 #else
