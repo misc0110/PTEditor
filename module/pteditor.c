@@ -139,6 +139,64 @@ void (*flush_tlb_mm_range_func)(struct mm_struct*, unsigned long, unsigned long,
 void (*native_write_cr4_func)(unsigned long);
 static struct mm_struct* get_mm(size_t);
 
+#if defined(__i386__) || defined(__x86_64__)
+void kallsyms_lookup_name_trampoline_jmp(void);
+unsigned long kallsyms_lookup_name_trampoline(const char*);
+
+asm (
+  ".text\n"
+  ".globl kallsyms_lookup_name_trampoline\n"
+  "kallsyms_lookup_name_trampoline:\n"
+#ifdef __x86_64__
+  "endbr64\n"
+#else
+  "endbr32\n"
+#endif
+  ".globl kallsyms_lookup_name_trampoline_jmp\n"
+  "kallsyms_lookup_name_trampoline_jmp:\n"
+  "jmp 0x7fffffff\n"
+);
+
+static inline unsigned long local_read_cr4(void) {
+    unsigned long cr4;
+
+    asm ("mov %%cr4, %0" : "=r" (cr4));
+    return cr4;
+}
+
+static inline void local_write_cr4(unsigned long cr4) {
+  asm ("mov %0, %%cr4" :: "r" (cr4));
+}
+
+static inline unsigned long local_read_cr0(void) {
+  unsigned long cr0;
+
+  asm ("mov %%cr0, %0" : "=r" (cr0));
+  return cr0;
+}
+
+static inline void local_write_cr0(unsigned long cr0) {
+  asm ("mov %0, %%cr0" :: "r" (cr0));
+}
+
+
+// Install a trampoline to kallsyms_lookup_name to circumvent CET
+static void install_kallsyms_lookup_name_trampoline(const void* target) {
+  __INT32_TYPE__* offset = (void*) ((unsigned char*)&kallsyms_lookup_name_trampoline_jmp + 1); 
+
+  // Remove write-protect flag in CR0 to allow for hot-patching
+  // First clear CET flag in CR4 - we get #GP if we don't do this
+  local_write_cr4(local_read_cr4() & ~(X86_CR4_CET));
+  local_write_cr0(local_read_cr0() & ~(X86_CR0_WP));
+
+  *offset = (__INT32_TYPE__) ((unsigned char*)target - (unsigned char*)&kallsyms_lookup_name_trampoline_jmp);
+
+  // Set write-protect and CET flags again
+  local_write_cr0(local_read_cr0() | (X86_CR0_WP));
+  local_write_cr4(local_read_cr4() | (X86_CR4_CET));
+}
+#endif
+
 static int device_open(struct inode *inode, struct file *file) {
   /* Check if device is busy */
   if (device_busy == true) {
@@ -710,6 +768,13 @@ static int __init pteditor_init(void) {
       pr_alert("Could not retrieve kallsyms_lookup_name address\n");
       return -ENXIO;
     }
+
+  #if defined(__i386__) || defined(__x86_64__)
+    if (boot_cpu_has(X86_FEATURE_IBT) && (local_read_cr4() & X86_CR4_CET)) {
+      install_kallsyms_lookup_name_trampoline(kallsyms_lookup_name);
+      kallsyms_lookup_name = (void*) &kallsyms_lookup_name_trampoline;
+    }
+  #endif
 #endif
 
   /* Register device */
