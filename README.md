@@ -142,6 +142,7 @@ System Info | Descriptions
 `void `[`ptedit_invalidate_tlb`](#group__BARRIERS_1gad2d64fa589bc626ba41ccf18c60d159f)`(void * address)`            | Invalidates the TLB entry of current process for a given address on all CPUs.
 `void `[`ptedit_invalidate_tlb_pid`](#group__BARRIERS_1gad2d64fa589bc626ba41ccf18c60d159f)`(pid_t pid, void * address)`            | Invalidates the TLB for a given PID and address on all CPUs.
 `void `[`ptedit_full_serializing_barrier`](#group__BARRIERS_1ga35efff6b34856596b467ef3a5075adc6)`()`            | A full serializing barrier which stops everything.
+`int `[`ptedit_switch_tlb_invalidation`](#group__BARRIERS_1gad2d64fa589bc626ba41ccf18c60d159f)`(int implementation)`            | The implementation to use, either `PTEDITOR_TLB_INVALIDATION_KERNEL` or `PTEDITOR_TLB_INVALIDATION_CUSTOM` (unsupported on x86).
 
  Memory types (PATs/MAIRs)       | Descriptions
 --------------------------------|---------------------------------------------
