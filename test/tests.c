@@ -450,12 +450,15 @@ UTEST(tlb, access_time_kernel_tlb_flush) {
     ASSERT_GT(flushed, normal);
 }
 
+// custom TLB invalidation is not supported on all CPUs
+#if !(defined(__i386__) || defined(__x86_64__))
 UTEST(tlb, access_time_custom_tlb_flush) {
     ptedit_switch_tlb_invalidation(PTEDITOR_TLB_INVALIDATION_CUSTOM);
     int flushed = access_time_ext(scratch, 100, ptedit_invalidate_tlb);
     int normal = access_time_ext(scratch, 100, NULL);
     ASSERT_GT(flushed, normal);
 }
+#endif
 
 int main(int argc, const char *const argv[]) {
     if(ptedit_init()) {

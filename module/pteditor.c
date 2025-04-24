@@ -160,40 +160,8 @@ static int device_release(struct inode *inode, struct file *file) {
 static void
 _invalidate_tlb(void *addr) {
 #if defined(__i386__) || defined(__x86_64__)
-  int pcid;
-  unsigned long flags;
-  unsigned long cr4;
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 2, 98)
-#ifndef X86_FEATURE_INVPCID_SINGLE
-#define X86_FEATURE_INVPCID_SINGLE X86_FEATURE_INVPCID
-#endif
-#if defined(X86_FEATURE_INVPCID_SINGLE) && defined(INVPCID_TYPE_INDIV_ADDR)
-  if (cpu_feature_enabled(X86_FEATURE_INVPCID_SINGLE)) {
-    for(pcid = 0; pcid < 4096; pcid++) {
-      invpcid_flush_one(pcid, (long unsigned int) addr);
-    }
-  } 
-  else 
-#endif
-  {
-    raw_local_irq_save(flags);
-#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 0, 0)
-    cr4 = native_read_cr4();
-#else
-    cr4 = this_cpu_read(cpu_tlbstate.cr4);
-#endif
-#else
-    cr4 = __read_cr4();
-#endif
-    native_write_cr4_func(cr4 & ~X86_CR4_PGE);
-    native_write_cr4_func(cr4);
-    raw_local_irq_restore(flags);
-  }
-#else
-  asm volatile ("invlpg (%0)": : "r"(addr));
-#endif
+  // this should be unreachable
+  pr_crit("This architecture does no longer support custom TLB invalidation!\n");
 #elif defined(__aarch64__)
   asm volatile ("dsb ishst");
   asm volatile ("tlbi vmalle1is");
@@ -624,6 +592,12 @@ static long device_ioctl(struct file *file, unsigned int ioctl_num, unsigned lon
     {
       if((int)ioctl_param != PTEDITOR_TLB_INVALIDATION_KERNEL && (int)ioctl_param != PTEDITOR_TLB_INVALIDATION_CUSTOM)
         return -1;
+#if defined(__i386__) || defined(__x86_64__)
+      if((int)ioctl_param == PTEDITOR_TLB_INVALIDATION_CUSTOM) {
+        pr_warn("Custom TLB invalidation is not supported on this CPU! Request ignored.");
+        return 0;
+      }
+#endif
       invalidate_tlb = ((int)ioctl_param == PTEDITOR_TLB_INVALIDATION_KERNEL) ? invalidate_tlb_kernel : invalidate_tlb_custom;
       return 0;
     }
@@ -726,18 +700,9 @@ static int __init pteditor_init(void) {
     return -ENXIO;
   }
 #endif
+  // we use the kernel TLB invalidation function by default as it's more reliable
   invalidate_tlb = invalidate_tlb_kernel;
   
-#if defined(__i386__) || defined(__x86_64__)
-  if (!cpu_feature_enabled(X86_FEATURE_INVPCID_SINGLE)) {
-    native_write_cr4_func = (void *) kallsyms_lookup_name("native_write_cr4");
-    if(!native_write_cr4_func) {
-        pr_alert("Could not retrieve native_write_cr4 function\n");
-        return -ENXIO;
-    }
-  }
-#endif
-
 #if defined(__aarch64__)
   asm volatile("mrs %0, tcr_el1" : "=r" (tcr_el1));
   switch((tcr_el1 >> 14) & 3) {
