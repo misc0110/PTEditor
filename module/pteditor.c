@@ -190,7 +190,9 @@ void _flush_tlb_page_smp(void* info) {
 static void
 invalidate_tlb_kernel(pid_t pid, void* addr) {
 #if defined(__i386__) || defined(__x86_64__)
-  flush_tlb_mm_range_func(get_mm(pid), (unsigned long) addr, (unsigned long) addr + real_page_size, real_page_shift, false);
+  struct mm_struct* mm = get_mm(pid);
+  if (!mm) return; // process might have already been killed
+  flush_tlb_mm_range_func(mm, (unsigned long) addr, (unsigned long) addr + real_page_size, real_page_shift, false);
 #elif defined(__aarch64__)
   struct vm_area_struct *vma = find_vma(current->mm, (unsigned long)addr);
   tlb_page_t tlb_page;
