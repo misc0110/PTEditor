@@ -1,6 +1,14 @@
+pteditor-dkms (0.8) bionic; urgency=medium
+
+  * Fixes for TLB invalidation
+
+ -- Michael Schwarz <michael.schwarz91@gmail.com>  Wed, 25 Feb 2026 18:13:20 +0100
+
 pteditor-dkms (0.7) bionic; urgency=medium
 
   * Fixes for kernel 6.5 and newer
+
+ -- Michael Schwarz <michael.schwarz91@gmail.com>  Sun, 08 Sep 2024 09:33:10 +0100
 
 pteditor-dkms (0.6) bionic; urgency=medium
 
