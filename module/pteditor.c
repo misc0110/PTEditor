@@ -139,6 +139,77 @@ void (*flush_tlb_mm_range_func)(struct mm_struct*, unsigned long, unsigned long,
 void (*native_write_cr4_func)(unsigned long);
 static struct mm_struct* get_mm(size_t);
 
+#if defined(__i386__) || defined(__x86_64__)
+static unsigned char __attribute__((section(".text"))) trampoline_page[PAGE_SIZE] = {0xc3, 0xcc};
+kallsyms_lookup_name_t kallsyms_lookup_name_trampoline = NULL;
+
+static inline unsigned long local_read_cr4(void) {
+    unsigned long cr4;
+
+    asm ("mov %%cr4, %0" : "=r" (cr4));
+    return cr4;
+}
+
+static inline void local_write_cr4(unsigned long cr4) {
+  asm ("mov %0, %%cr4" :: "r" (cr4));
+}
+
+static inline unsigned long local_read_cr0(void) {
+  unsigned long cr0;
+
+  asm ("mov %%cr0, %0" : "=r" (cr0));
+  return cr0;
+}
+
+static inline void local_write_cr0(unsigned long cr0) {
+  asm ("mov %0, %%cr0" :: "r" (cr0));
+}
+
+// Install a trampoline to circumvent CET
+static unsigned long install_trampoline(unsigned long target) {
+  static unsigned int page_offset = 0;
+#ifdef __x86_64__
+  const unsigned char endbr[] = {0xf3, 0x0f, 0x1e, 0xfa}; // endbr64
+#else
+  const unsigned char endbr[] = {0xf3, 0x0f, 0x1e, 0xfb}; // endbr32
+#endif
+  unsigned long ret = (unsigned long) trampoline_page + page_offset;
+
+  if (page_offset + 0x10 >= PAGE_SIZE)
+      return 0;
+
+  // Remove write-protect flag in CR0 to allow for hot-patching
+  // First clear CET flag in CR4 - we get #GP if we don't do this
+  local_write_cr4(local_read_cr4() & ~(X86_CR4_CET));
+  local_write_cr0(local_read_cr0() & ~(X86_CR0_WP));
+
+  // Add endbr instruction
+  memcpy(trampoline_page + page_offset, endbr, sizeof(endbr));
+  // OpCode for JMP REL32
+  trampoline_page[page_offset + sizeof(endbr)] = 0xe9;
+  // Offset for JMP REL32. Relative to the instruction following the jump, so we must add 5 as a constant offset
+  *(__INT32_TYPE__*)(trampoline_page + page_offset + sizeof(endbr) + 1) =
+          (__INT32_TYPE__) ((unsigned char*) target - &trampoline_page[page_offset + sizeof(endbr) + 5]);
+
+  // Set write-protect and CET flags again
+  local_write_cr0(local_read_cr0() | (X86_CR0_WP));
+  local_write_cr4(local_read_cr4() | (X86_CR4_CET));
+
+  page_offset += 0x10;
+
+  return ret;
+}
+
+static unsigned long cet_kallsyms_lookup_name(const char* name) {
+    unsigned long addr = kallsyms_lookup_name_trampoline(name);
+
+    if (!addr)
+        return 0;
+
+    return install_trampoline(addr);
+}
+#endif
+
 static int device_open(struct inode *inode, struct file *file) {
   /* Check if device is busy */
   if (device_busy == true) {
@@ -686,6 +757,18 @@ static int __init pteditor_init(void) {
       pr_alert("Could not retrieve kallsyms_lookup_name address\n");
       return -ENXIO;
     }
+
+    #if defined(__i386__) || defined(__x86_64__)
+    if (boot_cpu_has(X86_FEATURE_IBT) && (local_read_cr4() & X86_CR4_CET)) {
+      kallsyms_lookup_name_trampoline = (void*) install_trampoline((unsigned long) kallsyms_lookup_name);
+      kallsyms_lookup_name = &cet_kallsyms_lookup_name;
+
+      if (!unlikely(kallsyms_lookup_name_trampoline)) {
+          pr_alert("Could not install trampoline for kallsyms_lookup_name\n");
+          return -ENXIO;
+      }
+    }
+    #endif
 #endif
 
   /* Register device */
